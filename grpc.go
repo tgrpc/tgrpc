@@ -36,7 +36,7 @@ type Tgrpc struct {
 
 	Address        string    `toml:"address"`
 	KeepaliveTime  *Duration `toml:"keepalive"`
-	ReuseDesp      bool      `toml:"reuse_desp"`
+	ReuseDesc      bool      `toml:"reuse_desc"`
 	ProtoBasePath  string    `toml:"proto_base_path"` // proto 文件根目录
 	IncludeImports string    `toml:"include_imports"` // 要执行的方法所在的proto
 }
@@ -69,7 +69,7 @@ func (t *Tgrpc) getDescriptorSource(method string) (grpcurl.DescriptorSource, er
 	if source, ex := t.sources[method]; ex {
 		return source, nil
 	}
-	fileDescriptorSet, err := GetDescriptor(t.ProtoBasePath, method, t.IncludeImports, t.ReuseDesp)
+	fileDescriptorSet, err := GetDescriptor(t.ProtoBasePath, method, t.IncludeImports, t.ReuseDesc)
 	if isErr(err) {
 		t.err = err
 		return nil, err

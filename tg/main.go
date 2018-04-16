@@ -41,7 +41,6 @@ func main() {
 	}
 
 	tgr := Setup()
-	log.Infof("%+v", *tgr)
 	tgr.Tgr.Dial()
 	for _, inv := range tgr.Invokes {
 		tgr.Tgr.Invoke(inv.Method, inv.Headers, inv.Data)
@@ -53,7 +52,7 @@ func initSetup() {
 	rpc.Tgr = &tgrpc.Tgrpc{
 		Address:        "localhost:80",
 		KeepaliveTime:  &tgrpc.Duration{time.Second * 100},
-		ReuseDesp:      true,
+		ReuseDesc:      true,
 		ProtoBasePath:  "/Users/toukii/PATH/GOPATH/ezbuy/goflow/src/github.com/toukii/ngrpc",
 		IncludeImports: "helloworld/helloworld.proto",
 	}
