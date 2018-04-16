@@ -16,7 +16,7 @@ import (
 func GenDescriptorSet(protoPath, descSetOut, incImp string) error {
 	if !strings.HasPrefix(protoPath, "/") {
 		pwd, err := os.Getwd()
-		if isErr("get Pwd", err) {
+		if isErr(err) {
 			return err
 		}
 		protoPath = filepath.Join(pwd, protoPath)
@@ -32,32 +32,32 @@ func GenDescriptorSet(protoPath, descSetOut, incImp string) error {
 }
 
 // method: pkg.Service incImp:pkg.service.proto
-func GetDescriptro(protoBasePath, method, incImp string, reuseDesp bool) (*descriptor.FileDescriptorSet, error) {
+func GetDescriptor(protoBasePath, method, incImp string, reuseDesc bool) (*descriptor.FileDescriptorSet, error) {
 	serviceName, err := getServiceName(method)
-	if isErr("get ServiceName", err) {
+	if isErr(err) {
 		return nil, err
 	}
 	descSetOut := "." + serviceName + ".pbin"
 
-	var desp *descriptor.FileDescriptorSet
+	var desc *descriptor.FileDescriptorSet
 
-	if reuseDesp {
-		desp, err := decodeDesc(descSetOut)
+	if reuseDesc {
+		desc, err := decodeDesc(descSetOut)
 		if err == nil {
 			log.WithField("FileDescriptorSet", descSetOut).Debug("use exist desc")
-			return desp, nil
+			return desc, nil
 		}
 	}
 
 	err = GenDescriptorSet(protoBasePath, descSetOut, incImp)
-	if isErr("gen DescriptorSet", err) {
+	if isErr(err) {
 		return nil, err
 	}
-	desp, err = decodeDesc(descSetOut)
-	if isErr("decode Desc", err) {
+	desc, err = decodeDesc(descSetOut)
+	if isErr(err) {
 		return nil, err
 	}
-	return desp, nil
+	return desc, nil
 }
 
 func getServiceProto(protoFile string) string {
