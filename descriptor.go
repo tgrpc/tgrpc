@@ -32,16 +32,21 @@ func GenDescriptorSet(protoPath, descSetOut, incImp string) error {
 }
 
 // method: pkg.Service incImp:pkg.service.proto
-func GetDescriptro(protoBasePath, method, incImp string) (*descriptor.FileDescriptorSet, error) {
+func GetDescriptro(protoBasePath, method, incImp string, reuseDesp bool) (*descriptor.FileDescriptorSet, error) {
 	serviceName, err := getServiceName(method)
 	if isErr("get ServiceName", err) {
 		return nil, err
 	}
-	descSetOut := serviceName + ".pbin"
-	desp, err := decodeDesc(descSetOut)
-	if !isErr("decode Desc", err) {
-		log.WithField("FileDescriptorSet", descSetOut).Debug("use exist desc")
-		return desp, nil
+	descSetOut := "." + serviceName + ".pbin"
+
+	var desp *descriptor.FileDescriptorSet
+
+	if reuseDesp {
+		desp, err := decodeDesc(descSetOut)
+		if err == nil {
+			log.WithField("FileDescriptorSet", descSetOut).Debug("use exist desc")
+			return desp, nil
+		}
 	}
 
 	err = GenDescriptorSet(protoBasePath, descSetOut, incImp)
@@ -146,6 +151,31 @@ func GetService(fileDescriptorSets []*descriptor.FileDescriptorSet, path string)
 		FileDescriptorProto:    fileDescriptorProto,
 		FileDescriptorSet:      fileDescriptorSet,
 	}, nil
+}
+
+func SortFileDescriptorSet(fileDescriptorSet *descriptor.FileDescriptorSet, fileDescriptorProto *descriptor.FileDescriptorProto) (*descriptor.FileDescriptorSet, error) {
+	// best-effort checks
+	names := make(map[string]struct{}, len(fileDescriptorSet.File))
+	for _, iFileDescriptorProto := range fileDescriptorSet.File {
+		if iFileDescriptorProto.GetName() == "" {
+			return nil, fmt.Errorf("no name on FileDescriptorProto")
+		}
+		if _, ok := names[iFileDescriptorProto.GetName()]; ok {
+			return nil, fmt.Errorf("duplicate FileDescriptorProto in FileDescriptorSet: %s", iFileDescriptorProto.GetName())
+		}
+		names[iFileDescriptorProto.GetName()] = struct{}{}
+	}
+	if _, ok := names[fileDescriptorProto.GetName()]; !ok {
+		return nil, fmt.Errorf("no FileDescriptorProto named %s in FileDescriptorSet with names %v", fileDescriptorProto.GetName(), names)
+	}
+	newFileDescriptorSet := &descriptor.FileDescriptorSet{}
+	for _, iFileDescriptorProto := range fileDescriptorSet.File {
+		if iFileDescriptorProto.GetName() != fileDescriptorProto.GetName() {
+			newFileDescriptorSet.File = append(newFileDescriptorSet.File, iFileDescriptorProto)
+		}
+	}
+	newFileDescriptorSet.File = append(newFileDescriptorSet.File, fileDescriptorProto)
+	return newFileDescriptorSet, nil
 }
 
 // TODO: we don't actually do full path resolution per the descriptor.proto spec

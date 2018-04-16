@@ -14,6 +14,7 @@ import (
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/sirupsen/logrus"
+	"github.com/toukii/goutils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
@@ -32,23 +33,41 @@ func init() {
 	log.Debug("set log.Level: debug")
 }
 
-type tgr struct {
-	err           error
-	Address       string
-	conn          *grpc.ClientConn
-	KeepaliveTime time.Duration
-	UseExistDesp  bool
+type Tgrpc struct {
+	err     error
+	conn    *grpc.ClientConn
+	sources map[string]grpcurl.DescriptorSource // 缓存DescriptorSource
 
-	ProtoBasePath  string                              // proto 文件根目录
-	IncludeImports string                              // 要执行的方法所在的proto
-	sources        map[string]grpcurl.DescriptorSource // 缓存DescriptorSource
+	Address        string    `toml:"address"`
+	KeepaliveTime  *Duration `toml:"keepalive"`
+	ReuseDesp      bool      `toml:"reuse_desp"`
+	ProtoBasePath  string    `toml:"proto_base_path"` // proto 文件根目录
+	IncludeImports string    `toml:"include_imports"` // 要执行的方法所在的proto
 }
 
-func (t *tgr) isErr() bool {
-	return t.err != nil
+type Duration struct {
+	time.Duration
 }
 
-func (t *tgr) getDescriptorSource(method string) (grpcurl.DescriptorSource, error) {
+func (d *Duration) UnmarshalText(text []byte) error {
+	var err error
+	d.Duration, err = time.ParseDuration(goutils.ToString(text))
+	return err
+}
+
+func (d *Duration) MarshalText() ([]byte, error) {
+	return goutils.ToByte(fmt.Sprintf("%ds", int64(d.Seconds()))), nil
+}
+
+func (t *Tgrpc) isErr() bool {
+	ret := t.err != nil
+	if ret {
+		log.Error(t.err)
+	}
+	return ret
+}
+
+func (t *Tgrpc) getDescriptorSource(method string) (grpcurl.DescriptorSource, error) {
 	if t.isErr() {
 		return nil, t.err
 	}
@@ -58,13 +77,13 @@ func (t *tgr) getDescriptorSource(method string) (grpcurl.DescriptorSource, erro
 	if source, ex := t.sources[method]; ex {
 		return source, nil
 	}
-	fileDescriptorSet, err := GetDescriptro(t.ProtoBasePath, method, t.IncludeImports)
+	fileDescriptorSet, err := GetDescriptro(t.ProtoBasePath, method, t.IncludeImports, t.ReuseDesp)
 	if isErr("get Descriptor", err) {
 		t.err = err
 		return nil, err
 	}
 
-	/*serviceName, err := getServiceName(method)
+	serviceName, err := getServiceName(method)
 	if isErr("get ServiceForMethod", err) {
 		t.err = err
 		return nil, err
@@ -78,7 +97,7 @@ func (t *tgr) getDescriptorSource(method string) (grpcurl.DescriptorSource, erro
 	if isErr("sort FileDescriptorSet", err) {
 		t.err = err
 		return nil, err
-	}*/
+	}
 
 	source, err := grpcurl.DescriptorSourceFromFileDescriptorSet(fileDescriptorSet)
 	if isErr("grpcurl.DescriptorSource", err) {
@@ -88,32 +107,7 @@ func (t *tgr) getDescriptorSource(method string) (grpcurl.DescriptorSource, erro
 	return source, err
 }
 
-func SortFileDescriptorSet(fileDescriptorSet *descriptor.FileDescriptorSet, fileDescriptorProto *descriptor.FileDescriptorProto) (*descriptor.FileDescriptorSet, error) {
-	// best-effort checks
-	names := make(map[string]struct{}, len(fileDescriptorSet.File))
-	for _, iFileDescriptorProto := range fileDescriptorSet.File {
-		if iFileDescriptorProto.GetName() == "" {
-			return nil, fmt.Errorf("no name on FileDescriptorProto")
-		}
-		if _, ok := names[iFileDescriptorProto.GetName()]; ok {
-			return nil, fmt.Errorf("duplicate FileDescriptorProto in FileDescriptorSet: %s", iFileDescriptorProto.GetName())
-		}
-		names[iFileDescriptorProto.GetName()] = struct{}{}
-	}
-	if _, ok := names[fileDescriptorProto.GetName()]; !ok {
-		return nil, fmt.Errorf("no FileDescriptorProto named %s in FileDescriptorSet with names %v", fileDescriptorProto.GetName(), names)
-	}
-	newFileDescriptorSet := &descriptor.FileDescriptorSet{}
-	for _, iFileDescriptorProto := range fileDescriptorSet.File {
-		if iFileDescriptorProto.GetName() != fileDescriptorProto.GetName() {
-			newFileDescriptorSet.File = append(newFileDescriptorSet.File, iFileDescriptorProto)
-		}
-	}
-	newFileDescriptorSet.File = append(newFileDescriptorSet.File, fileDescriptorProto)
-	return newFileDescriptorSet, nil
-}
-
-func (t *tgr) Dial() {
+func (t *Tgrpc) Dial() {
 	if t.isErr() {
 		return
 	}
@@ -122,14 +116,14 @@ func (t *tgr) Dial() {
 	defer cancel()
 	t.conn, t.err = grpcurl.BlockingDial(ctx, "tcp", t.Address, nil, grpc.WithKeepaliveParams(
 		keepalive.ClientParameters{
-			Time:    t.KeepaliveTime,
-			Timeout: t.KeepaliveTime,
+			Time:    t.KeepaliveTime.Duration,
+			Timeout: t.KeepaliveTime.Duration,
 		},
 	))
 	isErr("grpcurl.BlockingDial", t.err)
 }
 
-func (t *tgr) Invoke(method string, headers []string, data string) error {
+func (t *Tgrpc) Invoke(method string, headers []string, data string) error {
 	if t.isErr() {
 		return t.err
 	}
@@ -147,7 +141,6 @@ func (t *tgr) Invoke(method string, headers []string, data string) error {
 		source, t.conn, methodName, headers,
 		newInvocationEventHandler(), decodeFunc(strings.NewReader(data)))
 	isErr("grpcurl.InvokeRpc", err)
-	t.err = err
 	return err
 }
 

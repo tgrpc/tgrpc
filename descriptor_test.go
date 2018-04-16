@@ -5,7 +5,7 @@ import (
 )
 
 func TestGenDescriptorSet(t *testing.T) {
-	err := GenDescriptorSet(".", "helloworld.Greeter.pbin", "helloworld/helloworld.proto")
+	err := GenDescriptorSet(".", ".helloworld.Greeter.pbin", "helloworld/helloworld.proto")
 	if err != nil {
 		t.Errorf("%s", err)
 	}
