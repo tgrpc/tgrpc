@@ -1,0 +1,6 @@
+Address = "localhost:80"
+KeepaliveTime = "100s"
+
+UseExistDesp = true
+ProtoBasePath = "/Users/toukii/PATH/GOPATH/ezbuy/goflow/src/github.com/tgrpc/tgrpc"
+IncludeImports = "helloworld/helloworld.proto"

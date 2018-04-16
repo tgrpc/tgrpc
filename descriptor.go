@@ -39,7 +39,7 @@ func GetDescriptro(protoBasePath, method, incImp string) (*descriptor.FileDescri
 	}
 	descSetOut := serviceName + ".pbin"
 	desp, err := decodeDesc(descSetOut)
-	if !isErr("decode Desc", err) {
+	if err == nil {
 		log.WithField("FileDescriptorSet", descSetOut).Debug("use exist desc")
 		return desp, nil
 	}

@@ -32,11 +32,11 @@ func init() {
 	log.Debug("set log.Level: debug")
 }
 
-type tgr struct {
+type Tgrpc struct {
 	err           error
 	Address       string
 	conn          *grpc.ClientConn
-	KeepaliveTime time.Duration
+	KeepaliveTime Duration
 	UseExistDesp  bool
 
 	ProtoBasePath  string                              // proto 文件根目录
@@ -44,11 +44,29 @@ type tgr struct {
 	sources        map[string]grpcurl.DescriptorSource // 缓存DescriptorSource
 }
 
-func (t *tgr) isErr() bool {
-	return t.err != nil
+type Duration struct {
+	time.Duration
 }
 
-func (t *tgr) getDescriptorSource(method string) (grpcurl.DescriptorSource, error) {
+func (d *Duration) UnmarshalString(text string) error {
+	var err error
+	d.Duration, err = time.ParseDuration(text)
+	return err
+}
+
+func (d *Duration) UnmarshalText(text []byte) error {
+	return d.UnmarshalString(string(text))
+}
+
+func (t *Tgrpc) isErr() bool {
+	ret := t.err != nil
+	if ret {
+		log.Error(t.err)
+	}
+	return ret
+}
+
+func (t *Tgrpc) getDescriptorSource(method string) (grpcurl.DescriptorSource, error) {
 	if t.isErr() {
 		return nil, t.err
 	}
@@ -113,7 +131,7 @@ func SortFileDescriptorSet(fileDescriptorSet *descriptor.FileDescriptorSet, file
 	return newFileDescriptorSet, nil
 }
 
-func (t *tgr) Dial() {
+func (t *Tgrpc) Dial() {
 	if t.isErr() {
 		return
 	}
@@ -122,14 +140,14 @@ func (t *tgr) Dial() {
 	defer cancel()
 	t.conn, t.err = grpcurl.BlockingDial(ctx, "tcp", t.Address, nil, grpc.WithKeepaliveParams(
 		keepalive.ClientParameters{
-			Time:    t.KeepaliveTime,
-			Timeout: t.KeepaliveTime,
+			Time:    t.KeepaliveTime.Duration,
+			Timeout: t.KeepaliveTime.Duration,
 		},
 	))
 	isErr("grpcurl.BlockingDial", t.err)
 }
 
-func (t *tgr) Invoke(method string, headers []string, data string) error {
+func (t *Tgrpc) Invoke(method string, headers []string, data string) error {
 	if t.isErr() {
 		return t.err
 	}
