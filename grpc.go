@@ -8,17 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fullstorydev/grpcurl"
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-	"github.com/jhump/protoreflect/desc"
 	"github.com/sirupsen/logrus"
+	"github.com/tgrpc/grpcurl"
 	"github.com/toukii/goutils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 )
 
 var (
@@ -60,11 +56,7 @@ func (d *Duration) MarshalText() ([]byte, error) {
 }
 
 func (t *Tgrpc) isErr() bool {
-	ret := t.err != nil
-	if ret {
-		log.Error(t.err)
-	}
-	return ret
+	return t.err != nil
 }
 
 func (t *Tgrpc) getDescriptorSource(method string) (grpcurl.DescriptorSource, error) {
@@ -77,30 +69,30 @@ func (t *Tgrpc) getDescriptorSource(method string) (grpcurl.DescriptorSource, er
 	if source, ex := t.sources[method]; ex {
 		return source, nil
 	}
-	fileDescriptorSet, err := GetDescriptro(t.ProtoBasePath, method, t.IncludeImports, t.ReuseDesp)
-	if isErr("get Descriptor", err) {
+	fileDescriptorSet, err := GetDescriptor(t.ProtoBasePath, method, t.IncludeImports, t.ReuseDesp)
+	if isErr(err) {
 		t.err = err
 		return nil, err
 	}
 
 	serviceName, err := getServiceName(method)
-	if isErr("get ServiceForMethod", err) {
+	if isErr(err) {
 		t.err = err
 		return nil, err
 	}
 	service, err := GetService([]*descriptor.FileDescriptorSet{fileDescriptorSet}, serviceName)
-	if isErr("get Service", err) {
+	if isErr(err) {
 		t.err = err
 		return nil, err
 	}
 	fileDescriptorSet, err = SortFileDescriptorSet(service.FileDescriptorSet, service.FileDescriptorProto)
-	if isErr("sort FileDescriptorSet", err) {
+	if isErr(err) {
 		t.err = err
 		return nil, err
 	}
 
 	source, err := grpcurl.DescriptorSourceFromFileDescriptorSet(fileDescriptorSet)
-	if isErr("grpcurl.DescriptorSource", err) {
+	if isErr(err) {
 		t.err = err
 	}
 	t.sources[method] = source
@@ -120,7 +112,7 @@ func (t *Tgrpc) Dial() {
 			Timeout: t.KeepaliveTime.Duration,
 		},
 	))
-	isErr("grpcurl.BlockingDial", t.err)
+	isErr(t.err)
 }
 
 func (t *Tgrpc) Invoke(method string, headers []string, data string) error {
@@ -128,19 +120,24 @@ func (t *Tgrpc) Invoke(method string, headers []string, data string) error {
 		return t.err
 	}
 	source, err := t.getDescriptorSource(method)
-	if isErr("get DescriptorSource", err) {
+	if isErr(err) {
 		return err
 	}
 
 	methodName, err := getMethod(method)
-	if isErr("get Method", err) {
+	if isErr(err) {
 		return err
 	}
+
+	if headers == nil {
+		headers = make([]string, 0, 1)
+	}
+	headers = append(headers, "trackid:t-r-a-c-k-Id")
 
 	err = grpcurl.InvokeRpc(context.Background(),
 		source, t.conn, methodName, headers,
 		newInvocationEventHandler(), decodeFunc(strings.NewReader(data)))
-	isErr("grpcurl.InvokeRpc", err)
+	isErr(err)
 	return err
 }
 
@@ -155,41 +152,14 @@ func decodeFunc(reader io.Reader) func() ([]byte, error) {
 	}
 }
 
-type invocationEventHandler struct {
-	err error
-}
-
-func newInvocationEventHandler() *invocationEventHandler {
-	return &invocationEventHandler{}
-}
-
-func (i *invocationEventHandler) OnResolveMethod(*desc.MethodDescriptor) {}
-
-func (i *invocationEventHandler) OnSendHeaders(metadata.MD) {}
-
-func (i *invocationEventHandler) OnReceiveHeaders(metadata.MD) {}
-
-func (i *invocationEventHandler) OnReceiveResponse(message proto.Message) {
-	s, err := jsonpbMarshaler.MarshalToString(message)
-	if isErr("Marshal", err) {
-		return
-	}
-	log.WithField("OnReceiveResponse", s).Info()
-}
-
-func (i *invocationEventHandler) OnReceiveTrailers(s *status.Status, _ metadata.MD) {
-	if err := s.Err(); err != nil {
-		// TODO(pedge): not great for streaming
-		i.err = err
-		log.WithField("OnReceiveTrailers", err).Error()
-		// printed by returning the error in handler
-		//i.println(err.Error())
-	}
-}
-
-func isErr(source string, err error) bool {
+func isErr(err error) bool {
 	if err != nil {
-		log.Infof("%s err:%s", source, err)
+		func_, file_, line_ := Caller(1)
+		fails := logrus.Fields{
+			"func": func_,
+			"file": fmt.Sprintf("%s :%d", file_, line_),
+		}
+		log.WithFields(fails).Error(err)
 		return true
 	}
 	return false
