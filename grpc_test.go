@@ -8,7 +8,7 @@ import (
 func TestInvokeGRpcGreeter(t *testing.T) {
 	tg := &Tgrpc{
 		Address:        "localhost:80",
-		KeepaliveTime:  Duration{time.Second * 100},
+		KeepaliveTime:  &Duration{time.Second * 100},
 		ProtoBasePath:  ".",
 		IncludeImports: "helloworld/helloworld.proto",
 	}

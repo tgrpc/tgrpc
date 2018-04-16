@@ -14,6 +14,7 @@ import (
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/sirupsen/logrus"
+	"github.com/toukii/goutils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
@@ -33,29 +34,29 @@ func init() {
 }
 
 type Tgrpc struct {
-	err           error
-	Address       string
-	conn          *grpc.ClientConn
-	KeepaliveTime Duration
-	UseExistDesp  bool
+	err     error
+	conn    *grpc.ClientConn
+	sources map[string]grpcurl.DescriptorSource // 缓存DescriptorSource
 
-	ProtoBasePath  string                              // proto 文件根目录
-	IncludeImports string                              // 要执行的方法所在的proto
-	sources        map[string]grpcurl.DescriptorSource // 缓存DescriptorSource
+	Address        string    `toml:"address"`
+	KeepaliveTime  *Duration `toml:"keepalive"`
+	ReuseDesp      bool      `toml:"reuse_desp"`
+	ProtoBasePath  string    `toml:"proto_base_path"` // proto 文件根目录
+	IncludeImports string    `toml:"include_imports"` // 要执行的方法所在的proto
 }
 
 type Duration struct {
 	time.Duration
 }
 
-func (d *Duration) UnmarshalString(text string) error {
+func (d *Duration) UnmarshalText(text []byte) error {
 	var err error
-	d.Duration, err = time.ParseDuration(text)
+	d.Duration, err = time.ParseDuration(goutils.ToString(text))
 	return err
 }
 
-func (d *Duration) UnmarshalText(text []byte) error {
-	return d.UnmarshalString(string(text))
+func (d *Duration) MarshalText() ([]byte, error) {
+	return goutils.ToByte(fmt.Sprintf("%ds", int64(d.Seconds()))), nil
 }
 
 func (t *Tgrpc) isErr() bool {
