@@ -77,13 +77,13 @@ func (t *Tgrpc) getDescriptorSource(method string) (grpcurl.DescriptorSource, er
 	if source, ex := t.sources[method]; ex {
 		return source, nil
 	}
-	fileDescriptorSet, err := GetDescriptro(t.ProtoBasePath, method, t.IncludeImports)
+	fileDescriptorSet, err := GetDescriptro(t.ProtoBasePath, method, t.IncludeImports, t.ReuseDesp)
 	if isErr("get Descriptor", err) {
 		t.err = err
 		return nil, err
 	}
 
-	/*serviceName, err := getServiceName(method)
+	serviceName, err := getServiceName(method)
 	if isErr("get ServiceForMethod", err) {
 		t.err = err
 		return nil, err
@@ -97,7 +97,7 @@ func (t *Tgrpc) getDescriptorSource(method string) (grpcurl.DescriptorSource, er
 	if isErr("sort FileDescriptorSet", err) {
 		t.err = err
 		return nil, err
-	}*/
+	}
 
 	source, err := grpcurl.DescriptorSourceFromFileDescriptorSet(fileDescriptorSet)
 	if isErr("grpcurl.DescriptorSource", err) {
@@ -105,31 +105,6 @@ func (t *Tgrpc) getDescriptorSource(method string) (grpcurl.DescriptorSource, er
 	}
 	t.sources[method] = source
 	return source, err
-}
-
-func SortFileDescriptorSet(fileDescriptorSet *descriptor.FileDescriptorSet, fileDescriptorProto *descriptor.FileDescriptorProto) (*descriptor.FileDescriptorSet, error) {
-	// best-effort checks
-	names := make(map[string]struct{}, len(fileDescriptorSet.File))
-	for _, iFileDescriptorProto := range fileDescriptorSet.File {
-		if iFileDescriptorProto.GetName() == "" {
-			return nil, fmt.Errorf("no name on FileDescriptorProto")
-		}
-		if _, ok := names[iFileDescriptorProto.GetName()]; ok {
-			return nil, fmt.Errorf("duplicate FileDescriptorProto in FileDescriptorSet: %s", iFileDescriptorProto.GetName())
-		}
-		names[iFileDescriptorProto.GetName()] = struct{}{}
-	}
-	if _, ok := names[fileDescriptorProto.GetName()]; !ok {
-		return nil, fmt.Errorf("no FileDescriptorProto named %s in FileDescriptorSet with names %v", fileDescriptorProto.GetName(), names)
-	}
-	newFileDescriptorSet := &descriptor.FileDescriptorSet{}
-	for _, iFileDescriptorProto := range fileDescriptorSet.File {
-		if iFileDescriptorProto.GetName() != fileDescriptorProto.GetName() {
-			newFileDescriptorSet.File = append(newFileDescriptorSet.File, iFileDescriptorProto)
-		}
-	}
-	newFileDescriptorSet.File = append(newFileDescriptorSet.File, fileDescriptorProto)
-	return newFileDescriptorSet, nil
 }
 
 func (t *Tgrpc) Dial() {
@@ -166,7 +141,6 @@ func (t *Tgrpc) Invoke(method string, headers []string, data string) error {
 		source, t.conn, methodName, headers,
 		newInvocationEventHandler(), decodeFunc(strings.NewReader(data)))
 	isErr("grpcurl.InvokeRpc", err)
-	t.err = err
 	return err
 }
 
