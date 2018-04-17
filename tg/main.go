@@ -65,7 +65,7 @@ func initSetup() {
 		Address:        "localhost:80",
 		KeepaliveTime:  &tgrpc.Duration{time.Second * 100},
 		ReuseDesc:      true,
-		ProtoBasePath:  "/Users/toukii/PATH/GOPATH/ezbuy/goflow/src/github.com/toukii/ngrpc",
+		ProtoBasePath:  "$GOPATH/src/github.com/toukii/ngrpc",
 		IncludeImports: "helloworld/helloworld.proto",
 	}
 	ivk := &Invoke{
