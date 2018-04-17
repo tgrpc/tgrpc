@@ -1,16 +1,20 @@
-[tgrpc]
+[Greeter]
+exced = true
+[Greeter.tgrpc]
   address = "localhost:80"
   reuse_desc = true
   proto_base_path = "/Users/toukii/PATH/GOPATH/ezbuy/goflow/src/github.com/toukii/ngrpc"
   include_imports = "helloworld/helloworld.proto"
   keepalive = "100s"
 
-[[invokes]]
+[[Greeter.invokes]]
+  exced = true
   method = "helloworld.Greeter/SayHello"
   headers = ["customerId:123", "region:UK"]
   data = "{\"name\":\"tgrpc-tg1\"}"
 
-[[invokes]]
+[[Greeter.invokes]]
+  exced = false
   method = "helloworld.Greeter/SayHello"
   headers = ["customerId:345", "region:UK"]
   data = "{\"name\":\"tgrpc-tg2\"}"
