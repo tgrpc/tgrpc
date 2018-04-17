@@ -72,13 +72,16 @@ func initSetup() {
 		Method:  "helloworld.Greeter/SayHello",
 		Headers: []string{"customerId:123", "region:UK"},
 		Data:    `{"name":"tgrpc-tg1"}`,
+		Exced:   true,
 	}
 	ivk2 := &Invoke{
 		Method:  "helloworld.Greeter/SayHello",
 		Headers: []string{"customerId:345", "region:UK"},
 		Data:    `{"name":"tgrpc-tg2"}`,
+		Exced:   true,
 	}
 	rpc.Invokes = []*Invoke{ivk, ivk2}
+	rpc.Exced = true
 	wr := bytes.NewWriter(make([]byte, 0, 256))
 	tgrs := TG{
 		"rpc1": &rpc,
