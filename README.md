@@ -11,12 +11,11 @@ tg [-c tgrpc.toml]
 ## test
 
 ```
-ln -s $GOPATH/src/github.com/toukii/ngrpc/helloworld helloworld
-
-$GOPATH/src/github.com/toukii/ngrpc/nginx.sh
-
-go run $GOPATH/src/github.com/toukii/ngrpc/serve.go
-
+# 开启服务
+go run $GOPATH/src/github.com/tgrpc/ngrpc/server.go &
+# 开启nginx代理grpc
+$GOPATH/src/github.com/tgrpc/ngrpc/nginx.sh &
+# 测试
 go test -v -test.run TestInvokeGRpcGreeter
 ```
 
