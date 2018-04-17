@@ -3,7 +3,7 @@ exced = true
 [Greeter.tgrpc]
   address = "localhost:2080"
   reuse_desc = false
-  proto_base_path = "$GOPATH/src/github.com/toukii/ngrpc"
+  proto_base_path = "$GOPATH/src/github.com/tgrpc/ngrpc"
   include_imports = "helloworld/helloworld.proto"
   keepalive = "100s"
 
@@ -11,10 +11,10 @@ exced = true
   exced = true
   method = "helloworld.Greeter/SayHello"
   headers = ["customerId:123", "region:UK"]
-  data = "{\"name\":\"tgrpc-tg1\"}"
+  data = '{"name":"tgrpc-tg1"}'
 
 [[Greeter.invokes]]
   exced = false
   method = "helloworld.Greeter/SayHello"
   headers = ["customerId:345", "region:UK"]
-  data = "{\"name\":\"tgrpc-tg2\"}"
+  data = '{"name":"tgrpc-tg2"}'

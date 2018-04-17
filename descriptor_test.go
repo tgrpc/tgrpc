@@ -5,7 +5,7 @@ import (
 )
 
 func TestGenDescriptorSet(t *testing.T) {
-	err := GenDescriptorSet(".", ".helloworld.Greeter.pbin", "helloworld/helloworld.proto")
+	err := GenDescriptorSet("$GOPATH/src/github.com/tgrpc/ngrpc", ".helloworld.Greeter.pbin", "helloworld/helloworld.proto")
 	if err != nil {
 		t.Errorf("%s", err)
 	}

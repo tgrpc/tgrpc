@@ -7,9 +7,9 @@ import (
 
 func TestInvokeGRpcGreeter(t *testing.T) {
 	tg := &Tgrpc{
-		Address:        "localhost:80",
+		Address:        "localhost:2080",
 		KeepaliveTime:  &Duration{time.Second * 100},
-		ProtoBasePath:  ".",
+		ProtoBasePath:  "$GOPATH/src/github.com/tgrpc/ngrpc",
 		IncludeImports: "helloworld/helloworld.proto",
 	}
 	tg.Dial()
