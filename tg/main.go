@@ -65,20 +65,23 @@ func initSetup() {
 		Address:        "localhost:80",
 		KeepaliveTime:  &tgrpc.Duration{time.Second * 100},
 		ReuseDesc:      true,
-		ProtoBasePath:  "/Users/toukii/PATH/GOPATH/ezbuy/goflow/src/github.com/toukii/ngrpc",
+		ProtoBasePath:  "$GOPATH/src/github.com/toukii/ngrpc",
 		IncludeImports: "helloworld/helloworld.proto",
 	}
 	ivk := &Invoke{
 		Method:  "helloworld.Greeter/SayHello",
 		Headers: []string{"customerId:123", "region:UK"},
 		Data:    `{"name":"tgrpc-tg1"}`,
+		Exced:   true,
 	}
 	ivk2 := &Invoke{
 		Method:  "helloworld.Greeter/SayHello",
 		Headers: []string{"customerId:345", "region:UK"},
 		Data:    `{"name":"tgrpc-tg2"}`,
+		Exced:   true,
 	}
 	rpc.Invokes = []*Invoke{ivk, ivk2}
+	rpc.Exced = true
 	wr := bytes.NewWriter(make([]byte, 0, 256))
 	tgrs := TG{
 		"rpc1": &rpc,
