@@ -40,10 +40,22 @@ func main() {
 		return
 	}
 
-	tgr := Setup()
-	tgr.Tgr.Dial()
-	for _, inv := range tgr.Invokes {
-		tgr.Tgr.Invoke(inv.Method, inv.Headers, inv.Data)
+	tg := Setup()
+	if len(tg) <= 0 {
+		log.Errorf("config is nil")
+	}
+	for k, tgr := range tg {
+		log.WithField("tgrpc", k).Infof("exced:%t", tgr.Exced)
+		if !tgr.Exced {
+			continue
+		}
+		tgr.Tgr.Dial()
+		for _, inv := range tgr.Invokes {
+			if !inv.Exced {
+				continue
+			}
+			tgr.Tgr.Invoke(inv.Method, inv.Headers, inv.Data)
+		}
 	}
 }
 
@@ -68,7 +80,11 @@ func initSetup() {
 	}
 	rpc.Invokes = []*Invoke{ivk, ivk2}
 	wr := bytes.NewWriter(make([]byte, 0, 256))
-	err := toml.NewEncoder(wr).Encode(&rpc)
+	tgrs := TG{
+		"rpc1": &rpc,
+		"rpc2": &rpc,
+	}
+	err := toml.NewEncoder(wr).Encode(tgrs)
 	log.Infof("encode:\n%s\nerr: %+v", wr.Bytes(), err)
 	err = goutils.SafeWriteFile("tgrpc.toml", wr.Bytes())
 	if err != nil {
@@ -76,11 +92,11 @@ func initSetup() {
 	}
 }
 
-func Setup() *Rpc {
-	r := new(Rpc)
-	_, err := toml.DecodeFile(conf, r)
+func Setup() TG {
+	var rs TG
+	_, err := toml.DecodeFile(conf, &rs)
 	if err != nil {
 		log.Panic(err)
 	}
-	return r
+	return rs
 }
