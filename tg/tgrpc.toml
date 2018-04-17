@@ -1,9 +1,9 @@
 [Greeter]
 exced = true
 [Greeter.tgrpc]
-  address = "localhost:80"
-  reuse_desc = true
-  proto_base_path = "/Users/toukii/PATH/GOPATH/ezbuy/goflow/src/github.com/toukii/ngrpc"
+  address = "localhost:2080"
+  reuse_desc = false
+  proto_base_path = "$GOPATH/src/github.com/toukii/ngrpc"
   include_imports = "helloworld/helloworld.proto"
   keepalive = "100s"
 
