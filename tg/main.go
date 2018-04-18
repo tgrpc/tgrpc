@@ -66,7 +66,9 @@ func main() {
 			sg.Add(n)
 			for i := 0; i < n; i++ {
 				go func(i int) {
-					tgr.Tgr.Invoke(inv.Method, []string{fmt.Sprintf(`idx:%d`, i)}, inv.Data)
+					headers := inv.Headers
+					headers = append(headers, fmt.Sprintf(`idx:%d`, i))
+					tgr.Tgr.Invoke(inv.Method, headers, inv.Data)
 					sg.Done()
 				}(i)
 				if inv.Interval != nil {
