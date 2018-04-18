@@ -7,9 +7,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+)
+
+var (
+	lock sync.Mutex
 )
 
 // protoPath 与 incImp 不能有重叠部分 incImp例子：服务目录/服务proto文件
@@ -32,7 +37,9 @@ func GenDescriptorSet(protoPath, descSetOut, incImp string) error {
 	incImp = getServiceProto(incImp)
 	args := []string{fmt.Sprintf("--proto_path=%s", protoPath), fmt.Sprintf("--descriptor_set_out=%s", descSetOut), "--include_imports", fmt.Sprintf("%s", incImp)}
 
+	lock.Lock()
 	bs, err := exec.Command("protoc", args...).CombinedOutput()
+	lock.Unlock()
 	if len(bs) > 0 {
 		log.WithField("protoc", string(bs)).Error(err)
 	}
