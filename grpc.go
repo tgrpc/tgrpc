@@ -22,11 +22,15 @@ var (
 	log             *logrus.Entry
 )
 
-func init() {
+func SetLog(logLevel string) {
+	lvl, err := logrus.ParseLevel(logLevel)
+	if err != nil {
+		logrus.Error(err)
+		lvl = logrus.DebugLevel
+	}
 	logger := logrus.New()
-	logger.SetLevel(logrus.DebugLevel)
+	logger.SetLevel(lvl)
 	log = logrus.NewEntry(logger)
-	log.Debug("set log.Level: debug")
 }
 
 type Tgrpc struct {

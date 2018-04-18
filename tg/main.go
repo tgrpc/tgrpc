@@ -2,12 +2,13 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"sync"
 	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/sirupsen/logrus"
 	"github.com/tgrpc/tgrpc"
-
 	"github.com/toukii/bytes"
 	"github.com/toukii/goutils"
 )
@@ -23,14 +24,18 @@ func init() {
 	flag.StringVar(&conf, "c", "tgrpc.toml", "-c tgrpc.toml")
 	flag.BoolVar(&initial, "i", false, "-i")
 
-	setLog()
+	setLog("debug")
 }
 
-func setLog() {
+func setLog(level string) {
+	lvl, err := logrus.ParseLevel(level)
+	if err != nil {
+		logrus.Error(err)
+		lvl = logrus.DebugLevel
+	}
 	logger := logrus.New()
-	logger.SetLevel(logrus.DebugLevel)
+	logger.SetLevel(lvl)
 	log = logrus.NewEntry(logger)
-	log.Debug("set log.Level: debug")
 }
 
 func main() {
@@ -49,43 +54,55 @@ func main() {
 		if !tgr.Exced {
 			continue
 		}
+		if tgr.Tgr == nil {
+			log.Infof("%s.Tgrpc is nil", k)
+			continue
+		}
+		tgrpc.SetLog(tgr.LogLevel)
 		tgr.Tgr.Dial()
 		for _, inv := range tgr.Invokes {
-			if !inv.Exced {
-				continue
+			sg := sync.WaitGroup{}
+			n := inv.N
+			sg.Add(n)
+			for i := 0; i < n; i++ {
+				go func(i int) {
+					tgr.Tgr.Invoke(inv.Method, []string{fmt.Sprintf(`idx:%d`, i)}, inv.Data)
+					sg.Done()
+				}(i)
+				if inv.Interval != nil {
+					time.Sleep(time.Duration(inv.Interval.Nanoseconds()))
+				}
 			}
-			tgr.Tgr.Invoke(inv.Method, inv.Headers, inv.Data)
+			sg.Wait()
 		}
 	}
 }
 
 func initSetup() {
-	rpc := Rpc{}
-	rpc.Tgr = &tgrpc.Tgrpc{
-		Address:        "localhost:80",
-		KeepaliveTime:  &tgrpc.Duration{time.Second * 100},
-		ReuseDesc:      true,
-		ProtoBasePath:  "$GOPATH/src/github.com/toukii/ngrpc",
-		IncludeImports: "helloworld/helloworld.proto",
+	rpc := Rpc{
+		Tgr: &tgrpc.Tgrpc{
+			Address:        "localhost:2080",
+			KeepaliveTime:  &tgrpc.Duration{time.Second * 100},
+			ReuseDesc:      true,
+			ProtoBasePath:  "$GOPATH/src/github.com/toukii/ngrpc",
+			IncludeImports: "helloworld/helloworld.proto",
+		},
+		Invokes: []*Invoke{
+			&Invoke{
+				Method:   "helloworld.Greeter/SayHello",
+				Headers:  []string{"customerId:123", "region:UK"},
+				Data:     `{"name":"tgrpc-tg1"}`,
+				N:        5,
+				Interval: &Ms{time.Millisecond * 200},
+			},
+		},
+		Exced:    true,
+		LogLevel: "debug",
 	}
-	ivk := &Invoke{
-		Method:  "helloworld.Greeter/SayHello",
-		Headers: []string{"customerId:123", "region:UK"},
-		Data:    `{"name":"tgrpc-tg1"}`,
-		Exced:   true,
-	}
-	ivk2 := &Invoke{
-		Method:  "helloworld.Greeter/SayHello",
-		Headers: []string{"customerId:345", "region:UK"},
-		Data:    `{"name":"tgrpc-tg2"}`,
-		Exced:   true,
-	}
-	rpc.Invokes = []*Invoke{ivk, ivk2}
-	rpc.Exced = true
+
 	wr := bytes.NewWriter(make([]byte, 0, 256))
 	tgrs := TG{
-		"rpc1": &rpc,
-		"rpc2": &rpc,
+		"tgrpc": &rpc,
 	}
 	err := toml.NewEncoder(wr).Encode(tgrs)
 	log.Infof("encode:\n%s\nerr: %+v", wr.Bytes(), err)
