@@ -30,7 +30,7 @@ func init() {
 func setLog(level string) {
 	lvl, err := logrus.ParseLevel(level)
 	if err != nil {
-		log.Error(err)
+		logrus.Error(err)
 		lvl = logrus.DebugLevel
 	}
 	logger := logrus.New()
