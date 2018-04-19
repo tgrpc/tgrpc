@@ -62,7 +62,7 @@ func (r *Resp) VerifyCost(cost int64) {
 	cst := time.Duration(cost)
 	cost /= 1e6
 	rcost := r.Cost.Nanoseconds() / 1e6
-	if cost > rcost {
+	if cost >= rcost {
 		log.Errorf("time cost: %+v more than %d ms;", cst, rcost)
 	} else if cost > rcost*3/4 {
 		log.Warnf("time cost: %+v nearby %d ms;", cst, rcost)
