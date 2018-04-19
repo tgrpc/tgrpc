@@ -1,9 +1,13 @@
 package tgrpc
 
 import (
+	"fmt"
 	"path"
 	"reflect"
 	"runtime"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/jhump/protoreflect/desc"
@@ -26,6 +30,8 @@ func (i *invocationEventHandler) OnResolveMethod(desc *desc.MethodDescriptor) {
 }
 
 func (i *invocationEventHandler) OnSendHeaders(md metadata.MD) {
+	now := time.Now()
+	md["_tgrpc"] = []string{fmt.Sprintf("start_time=%d", now.UnixNano()), fmt.Sprintf("track_id=%s", "TRACKID")}
 	log.Debugf("OnSendHeaders: %+v", md)
 }
 
@@ -34,6 +40,7 @@ func (i *invocationEventHandler) OnReceiveHeaders(md metadata.MD) {
 }
 
 func (i *invocationEventHandler) OnReceiveResponse(md metadata.MD, message proto.Message) {
+	now := time.Now()
 	wr := bytes.NewWriter(make([]byte, 0, 1024))
 	err := jsonpbMarshaler.Marshal(wr, message)
 	if isErr(err) {
@@ -41,11 +48,25 @@ func (i *invocationEventHandler) OnReceiveResponse(md metadata.MD, message proto
 	}
 	bs := wr.Bytes()
 	if !reflect.ValueOf(i.vf).IsNil() {
-		i.vf.Verify(bs, 0)
+		startTime, err := getStartTime(md)
+		cost := int64(0)
+		if !isErr(err) {
+			cost = now.UnixNano() - startTime
+		}
+		i.vf.Verify(bs, cost)
 	}
-	log.Debugf("OnReceiveResponse md: %+v", md)
-	trackId := md["trackid"]
-	log.WithField("OnReceiveResponse", goutils.ToString(bs)).Infof("trackId: %+v", trackId)
+	log.Debugf("OnReceiveResponse md: %+v %+v", md, now)
+	log.WithField("OnReceiveResponse", goutils.ToString(bs)).Info()
+}
+
+func getStartTime(md metadata.MD) (int64, error) {
+	mds := md["_tgrpc"]
+	for _, v := range mds {
+		if strings.HasPrefix(v, "start_time=") {
+			return strconv.ParseInt(strings.Split(v, "start_time=")[1], 10, 64)
+		}
+	}
+	return 0, fmt.Errorf("start_time is not set.")
 }
 
 func (i *invocationEventHandler) OnReceiveTrailers(s *status.Status, _ metadata.MD) {

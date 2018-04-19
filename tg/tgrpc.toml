@@ -1,6 +1,6 @@
 [Greeter]
 exced = true
-log_level = "info"
+log_level = "debug"
 [Greeter.tgrpc]
   address = "localhost:2080"
   reuse_desc = false
@@ -12,12 +12,12 @@ log_level = "info"
   method = "helloworld.Greeter/SayHello"
   headers = ["customerId:123", "region:UK"]
   data = '{"name":"tgrpc-tg1"}'
-  n = 5
+  n = 2
   interval = "100ms"
 
 [[Greeter.invokes]]
   method = "helloworld.Greeter/SayHello"
   headers = ["customerId:345", "region:UK"]
   data = '{"name":"tgrpc-tg2"}'
-  n = 5
+  n = 0
   interval = "200ms"

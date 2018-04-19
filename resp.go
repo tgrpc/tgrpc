@@ -3,6 +3,7 @@ package tgrpc
 import (
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/toukii/goutils"
 	"github.com/toukii/jsnm"
@@ -57,12 +58,14 @@ func (r *Resp) VerifyCost(cost int64) {
 	if r.Cost == nil {
 		return
 	}
+	cst := time.Duration(cost)
+	cost /= 1e6
 	rcost := r.Cost.Nanoseconds() / 1e6
 	if cost > rcost {
-		log.Errorf("time cost: %d ms more than %d ms;", cost, rcost)
+		log.Errorf("time cost: %+v more than %d ms;", cst, rcost)
 	} else if cost > rcost*3/4 {
-		log.Warnf("time cost: %d ms near by %d ms;", cost, rcost)
+		log.Warnf("time cost: %+v nearby %d ms;", cst, rcost)
 	} else {
-		log.Debugf("time cost: %d ms / %d ms;", cost, rcost)
+		log.Debugf("time cost: %+v / %d ms;", cst, rcost)
 	}
 }

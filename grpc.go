@@ -133,14 +133,8 @@ func (t *Tgrpc) Invoke(inv *Invoke) error {
 		return err
 	}
 
-	headers := inv.Headers
-	if headers == nil {
-		headers = make([]string, 0, 1)
-	}
-	headers = append(headers, "trackid:t-r-a-c-k-Id")
-
 	err = grpcurl.InvokeRpc(context.Background(),
-		source, t.conn, methodName, headers,
+		source, t.conn, methodName, inv.Headers,
 		newInvocationEventHandler(inv.Resp), decodeFunc(strings.NewReader(inv.Data)))
 	isErr(err)
 	return err
