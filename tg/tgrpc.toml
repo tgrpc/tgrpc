@@ -1,23 +1,22 @@
 [Greeter]
-exced = true
-log_level = "debug"
-[Greeter.tgrpc]
-  address = "localhost:2080"
-  reuse_desc = false
-  proto_base_path = "$GOPATH/src/github.com/tgrpc/ngrpc"
-  include_imports = "helloworld/helloworld.proto"
-  keepalive = "10ms"
+  exced = true
+  log_level = "debug"
+  [Greeter.tgrpc]
+    address = "localhost:2080"
+    reuse_desc = true
+    proto_base_path = "$GOPATH/src/github.com/tgrpc/ngrpc"
+    include_imports = "helloworld/helloworld.proto"
+    keepalive = "100s"
 
-[[Greeter.invokes]]
-  method = "helloworld.Greeter/SayHello"
-  headers = ["customerId:123", "region:UK"]
-  data = '{"name":"tgrpc-tg1"}'
-  n = 2
-  interval = "100ms"
-
-[[Greeter.invokes]]
-  method = "helloworld.Greeter/SayHello"
-  headers = ["customerId:345", "region:UK"]
-  data = '{"name":"tgrpc-tg2"}'
-  n = 0
-  interval = "200ms"
+  [[Greeter.invokes]]
+    method = "helloworld.Greeter/SayHello"
+    headers = ["customerId:123", "region:UK"]
+    data = "{\"name\":\"tgrpc-tg1\"}"
+    n = 5
+    interval = "200ms"
+    [Greeter.invokes.resp]
+      Body = ""
+      Regexp = ""
+      Cost = "500ms"
+      [Greeter.invokes.resp.Json]
+        message = "Hello tgrpc-tg1"

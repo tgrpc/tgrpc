@@ -83,7 +83,7 @@ func initSetup() {
 			Address:        "localhost:2080",
 			KeepaliveTime:  &tgrpc.Duration{time.Second * 100},
 			ReuseDesc:      true,
-			ProtoBasePath:  "$GOPATH/src/github.com/toukii/ngrpc",
+			ProtoBasePath:  "$GOPATH/src/github.com/tgrpc/ngrpc",
 			IncludeImports: "helloworld/helloworld.proto",
 		},
 		Invokes: []*tgrpc.Invoke{
@@ -107,7 +107,7 @@ func initSetup() {
 
 	wr := bytes.NewWriter(make([]byte, 0, 256))
 	tgrs := TG{
-		"tgrpc": &rpc,
+		"Greeter": &rpc,
 	}
 	err := toml.NewEncoder(wr).Encode(tgrs)
 	log.Infof("encode:\n%s\nerr: %+v", wr.Bytes(), err)
