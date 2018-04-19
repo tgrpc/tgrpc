@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"sync"
 	"time"
 
@@ -66,9 +65,7 @@ func main() {
 			sg.Add(n)
 			for i := 0; i < n; i++ {
 				go func(i int) {
-					headers := inv.Headers
-					headers = append(headers, fmt.Sprintf(`idx:%d`, i))
-					tgr.Tgr.Invoke(inv.Method, headers, inv.Data)
+					tgr.Tgr.Invoke(inv)
 					sg.Done()
 				}(i)
 				if inv.Interval != nil {
@@ -89,13 +86,20 @@ func initSetup() {
 			ProtoBasePath:  "$GOPATH/src/github.com/toukii/ngrpc",
 			IncludeImports: "helloworld/helloworld.proto",
 		},
-		Invokes: []*Invoke{
-			&Invoke{
+		Invokes: []*tgrpc.Invoke{
+			&tgrpc.Invoke{
 				Method:   "helloworld.Greeter/SayHello",
 				Headers:  []string{"customerId:123", "region:UK"},
 				Data:     `{"name":"tgrpc-tg1"}`,
 				N:        5,
-				Interval: &Ms{time.Millisecond * 200},
+				Interval: &tgrpc.Ms{time.Millisecond * 200},
+				Resp: &tgrpc.Resp{
+					Cost: &tgrpc.Ms{time.Millisecond * 500},
+					Code: 200,
+					Json: map[string]string{
+						`message`: "Hello tgrpc-tg1",
+					},
+				},
 			},
 		},
 		Exced:    true,

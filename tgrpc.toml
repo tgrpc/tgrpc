@@ -1,0 +1,23 @@
+[tgrpc]
+  exced = true
+  log_level = "debug"
+  [tgrpc.tgrpc]
+    address = "localhost:2080"
+    reuse_desc = true
+    proto_base_path = "$GOPATH/src/github.com/toukii/ngrpc"
+    include_imports = "helloworld/helloworld.proto"
+    keepalive = "100s"
+
+  [[tgrpc.invokes]]
+    method = "helloworld.Greeter/SayHello"
+    headers = ["customerId:123", "region:UK"]
+    data = "{\"name\":\"tgrpc-tg1\"}"
+    n = 5
+    interval = "200ms"
+    [tgrpc.invokes.resp]
+      Code = 200
+      Body = ""
+      Regexp = ""
+      Cost = "500ms"
+      [tgrpc.invokes.resp.Json]
+        message = "Hello tgrpc-tg1"
