@@ -15,6 +15,27 @@
     n = 5
     interval = "200ms"
     [Greeter.invokes.resp]
-      cost = "500ms"
+      cost = "2ms"
       [Greeter.invokes.resp.json]
         message = "Hello tgrpc-tg1"
+
+[Language]
+  exced = true
+  log_level = "debug"
+  [Language.tgrpc]
+    address = "localhost:2080"
+    reuse_desc = true
+    proto_base_path = "$GOPATH/src/github.com/tgrpc/ngrpc"
+    include_imports = "helloworld/lang.proto"
+    keepalive = "100s"
+
+  [[Language.invokes]]
+    method = "helloworld.LangService/List"
+    headers = ["customerId:123", "region:UK"]
+    data = '{}'
+    n = 5
+    interval = "200ms"
+    [Language.invokes.resp]
+      cost = "2ms"
+      [Language.invokes.resp.json]
+        'langs,0,birthday' = 1.136185445e+09
