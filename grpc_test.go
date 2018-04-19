@@ -5,6 +5,10 @@ import (
 	"time"
 )
 
+func init() {
+	SetLog("debug")
+}
+
 func TestInvokeGRpcGreeter(t *testing.T) {
 	tg := &Tgrpc{
 		Address:        "localhost:2080",
@@ -13,6 +17,16 @@ func TestInvokeGRpcGreeter(t *testing.T) {
 		IncludeImports: "helloworld/helloworld.proto",
 	}
 	tg.Dial()
-	tg.Invoke("helloworld.Greeter/SayHello", nil, `{"name":"tgrpc"}`)
-	tg.Invoke("helloworld.Greeter/SayHello", nil, `{"name":"tgrpc"}`)
+	tg.Invoke(&Invoke{
+		Method:   "helloworld.Greeter/SayHello",
+		Headers:  nil,
+		Data:     `{"name":"tgrpc"}`,
+		N:        2,
+		Interval: &Ms{time.Millisecond * 100},
+		Resp: &Resp{
+			Json: map[string]string{
+				"message": "Hello tgrpc",
+			},
+		},
+	})
 }

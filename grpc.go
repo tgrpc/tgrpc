@@ -119,20 +119,21 @@ func (t *Tgrpc) Dial() {
 	isErr(t.err)
 }
 
-func (t *Tgrpc) Invoke(method string, headers []string, data string) error {
+func (t *Tgrpc) Invoke(inv *Invoke) error {
 	if t.isErr() {
 		return t.err
 	}
-	source, err := t.getDescriptorSource(method)
+	source, err := t.getDescriptorSource(inv.Method)
 	if isErr(err) {
 		return err
 	}
 
-	methodName, err := getMethod(method)
+	methodName, err := getMethod(inv.Method)
 	if isErr(err) {
 		return err
 	}
 
+	headers := inv.Headers
 	if headers == nil {
 		headers = make([]string, 0, 1)
 	}
@@ -140,7 +141,7 @@ func (t *Tgrpc) Invoke(method string, headers []string, data string) error {
 
 	err = grpcurl.InvokeRpc(context.Background(),
 		source, t.conn, methodName, headers,
-		newInvocationEventHandler(), decodeFunc(strings.NewReader(data)))
+		newInvocationEventHandler(inv.Resp), decodeFunc(strings.NewReader(inv.Data)))
 	isErr(err)
 	return err
 }
