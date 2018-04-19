@@ -95,7 +95,7 @@ func initSetup() {
 				Interval: &tgrpc.Ms{time.Millisecond * 200},
 				Resp: &tgrpc.Resp{
 					Cost: &tgrpc.Ms{time.Millisecond * 500},
-					Json: map[string]string{
+					Json: map[string]interface{}{
 						`message`: "Hello tgrpc-tg1",
 					},
 				},

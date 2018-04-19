@@ -1,6 +1,7 @@
 package tgrpc
 
 import (
+	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -14,10 +15,10 @@ type Verifier interface {
 }
 
 type Resp struct {
-	Cost   *Ms
-	Body   string
-	Regexp string
-	Json   map[string]string
+	Cost   *Ms                    `toml:"cost"`
+	Body   string                 `toml:"body"`
+	Regexp string                 `toml:"regexp"`
+	Json   map[string]interface{} `toml:"json"`
 }
 
 func (r *Resp) Verify(bs []byte, cost int64) {
@@ -31,9 +32,9 @@ func (r *Resp) VerifyJson(bs []byte) {
 	js := jsnm.BytesFmt(bs)
 	for ks, wv := range r.Json {
 		kss := strings.Split(ks, ",")
-		k := js.ArrGet(kss...).RawData().String()
-		if k != wv {
-			log.Errorf("response body: <%s> is goten, <%s> is wanted.", k, wv)
+		k := js.ArrGet(kss...).RawData().Raw()
+		if !reflect.DeepEqual(k, wv) {
+			log.Errorf("response body: <%+v> is goten, <%+v> is wanted.", k, wv)
 		}
 	}
 }

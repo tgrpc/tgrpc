@@ -15,8 +15,6 @@
     n = 5
     interval = "200ms"
     [Greeter.invokes.resp]
-      Body = ""
-      Regexp = ""
-      Cost = "500ms"
-      [Greeter.invokes.resp.Json]
+      cost = "500ms"
+      [Greeter.invokes.resp.json]
         message = "Hello tgrpc-tg1"
