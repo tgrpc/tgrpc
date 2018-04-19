@@ -11,7 +11,8 @@ import (
 )
 
 type Verifier interface {
-	Verify(bs []byte, cost int64)
+	Verify(bs []byte)
+	VerifyCost(cost int64)
 }
 
 type Resp struct {
@@ -21,11 +22,10 @@ type Resp struct {
 	Json   map[string]interface{} `toml:"json"`
 }
 
-func (r *Resp) Verify(bs []byte, cost int64) {
+func (r *Resp) Verify(bs []byte) {
 	r.VerifyJson(bs)
 	r.VerifyRegexp(bs)
 	r.VerifyBody(bs)
-	r.VerifyCost(cost)
 }
 
 func (r *Resp) VerifyJson(bs []byte) {

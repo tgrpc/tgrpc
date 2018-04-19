@@ -22,7 +22,10 @@ type invocationEventHandler struct {
 }
 
 func newInvocationEventHandler(vf Verifier) *invocationEventHandler {
-	return &invocationEventHandler{vf: vf}
+	if !reflect.ValueOf(vf).IsNil() {
+		return &invocationEventHandler{vf: vf}
+	}
+	return &invocationEventHandler{vf: nil}
 }
 
 func (i *invocationEventHandler) OnResolveMethod(desc *desc.MethodDescriptor) {
@@ -37,25 +40,20 @@ func (i *invocationEventHandler) OnSendHeaders(md metadata.MD) {
 
 func (i *invocationEventHandler) OnReceiveHeaders(md metadata.MD) {
 	log.Debugf("OnReceiveHeaders: %+v", md)
+	i.verifyCost(md)
 }
 
 func (i *invocationEventHandler) OnReceiveResponse(md metadata.MD, message proto.Message) {
-	now := time.Now()
 	wr := bytes.NewWriter(make([]byte, 0, 1024))
 	err := jsonpbMarshaler.Marshal(wr, message)
 	if isErr(err) {
 		return
 	}
 	bs := wr.Bytes()
-	if !reflect.ValueOf(i.vf).IsNil() {
-		startTime, err := getStartTime(md)
-		cost := int64(0)
-		if !isErr(err) {
-			cost = now.UnixNano() - startTime
-		}
-		i.vf.Verify(bs, cost)
+	if i.vf != nil {
+		i.vf.Verify(bs)
 	}
-	log.Debugf("OnReceiveResponse md: %+v %+v", md, now)
+	log.Debugf("OnReceiveResponse md: %+v", md)
 	log.WithField("OnReceiveResponse", goutils.ToString(bs)).Info()
 }
 
@@ -69,9 +67,18 @@ func getStartTime(md metadata.MD) (int64, error) {
 	return 0, fmt.Errorf("start_time is not set.")
 }
 
-func (i *invocationEventHandler) OnReceiveTrailers(s *status.Status, _ metadata.MD) {
+func (i *invocationEventHandler) OnReceiveTrailers(s *status.Status, md metadata.MD) {
 	if err := s.Err(); err != nil {
 		log.WithField("OnReceiveTrailers", err).Error()
+	}
+}
+
+func (i *invocationEventHandler) verifyCost(md metadata.MD) {
+	if i.vf != nil {
+		startTime, err := getStartTime(md)
+		if !isErr(err) {
+			i.vf.VerifyCost(time.Now().UnixNano() - startTime)
+		}
 	}
 }
 
