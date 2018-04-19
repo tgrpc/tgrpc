@@ -1,10 +1,9 @@
-package main
+package tgrpc
 
 import (
 	"fmt"
 	"time"
 
-	"github.com/tgrpc/tgrpc"
 	"github.com/toukii/goutils"
 )
 
@@ -14,16 +13,8 @@ type Invoke struct {
 	Data     string   `toml:"data"`
 	N        int      `toml:"n"`
 	Interval *Ms      `toml:"interval"`
+	Resp     *Resp    `toml:"resp"`
 }
-
-type Rpc struct {
-	Tgr      *tgrpc.Tgrpc `toml:"tgrpc"`
-	Invokes  []*Invoke    `toml:"invokes"`
-	Exced    bool         `toml:"exced"` // 是否执行
-	LogLevel string       `toml:"log_level"`
-}
-
-type TG map[string]*Rpc
 
 type Ms struct {
 	time.Duration
