@@ -9,22 +9,20 @@ import (
 )
 
 type Verifier interface {
-	Verify(bs []byte, code int32, cost int64)
+	Verify(bs []byte, cost int64)
 }
 
 type Resp struct {
-	Code   int32
 	Cost   *Ms
 	Body   string
 	Regexp string
 	Json   map[string]string
 }
 
-func (r *Resp) Verify(bs []byte, code int32, cost int64) {
+func (r *Resp) Verify(bs []byte, cost int64) {
 	r.VerifyJson(bs)
 	r.VerifyRegexp(bs)
 	r.VerifyBody(bs)
-	r.VerifyCode(code)
 	r.VerifyCost(cost)
 }
 
@@ -55,12 +53,6 @@ func (r *Resp) VerifyBody(bs []byte) {
 	}
 }
 
-func (r *Resp) VerifyCode(code int32) {
-	if r.Code != code {
-		log.Errorf("error code::%d gotten, %d wanted", code, r.Code)
-	}
-}
-
 func (r *Resp) VerifyCost(cost int64) {
 	if r.Cost == nil {
 		return
@@ -71,6 +63,6 @@ func (r *Resp) VerifyCost(cost int64) {
 	} else if cost > rcost*3/4 {
 		log.Warnf("time cost: %d ms near by %d ms;", cost, rcost)
 	} else {
-		log.Infof("time cost: %d ms / %d ms;", cost, rcost)
+		log.Debugf("time cost: %d ms / %d ms;", cost, rcost)
 	}
 }

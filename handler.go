@@ -41,7 +41,7 @@ func (i *invocationEventHandler) OnReceiveResponse(md metadata.MD, message proto
 	}
 	bs := wr.Bytes()
 	if !reflect.ValueOf(i.vf).IsNil() {
-		i.vf.Verify(bs, 0, 0)
+		i.vf.Verify(bs, 0)
 	}
 	log.Debugf("OnReceiveResponse md: %+v", md)
 	trackId := md["trackid"]
