@@ -36,7 +36,7 @@ func (r *Resp) VerifyJson(bs []byte) {
 		typv := reflect.TypeOf(v)
 		typwv := reflect.TypeOf(wv)
 		if !reflect.DeepEqual(v, wv) {
-			log.WithField("path", ks).Errorf("%+v [%s] is goten, %+v [%s] is wanted.", v, typv, wv, typwv)
+			log.WithField("path", ks).Errorf("%+v [%+v] is goten, %+v [%s] is wanted.", v, typv, wv, typwv)
 		}
 	}
 }
