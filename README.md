@@ -1,23 +1,21 @@
 # tgrpc
 
-## tg: tgrpc in termial
+tg: tgrpc in termial
+============
 
-```
-go get github.com/tgrpc/tgrpc/tg
-tg -i
-tg [-c tgrpc.toml]
-```
+为了方便测试，可开启grpc服务代理，参考[github.com/tgrpc/ngrpc](https://github.com/tgrpc/ngrpc)。
 
-## test
+使用方法，请看[tgrpc/doc](https://github.com/tgrpc/doc)
 
-```
-# 开启服务
-go run $GOPATH/src/github.com/tgrpc/ngrpc/server.go &
-# 开启nginx代理grpc
-$GOPATH/src/github.com/tgrpc/ngrpc/nginx.sh &
-# 测试
-go test -v -test.run TestInvokeGRpcGreeter
-```
+## todo
+
+1. 方法调用闭环
+2. 调用链状态显示
+
+## roadmap
+
+1. 验证接口返回结果
+2. 验证接口响应时间
 
 ## origin
 
