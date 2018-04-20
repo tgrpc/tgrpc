@@ -32,9 +32,11 @@ func (r *Resp) VerifyJson(bs []byte) {
 	js := jsnm.BytesFmt(bs)
 	for ks, wv := range r.Json {
 		kss := strings.Split(ks, ",")
-		k := js.ArrGet(kss...).RawData().Raw()
-		if !reflect.DeepEqual(k, wv) {
-			log.Errorf("response body: <%+v> is goten, <%+v> is wanted.", k, wv)
+		v := js.ArrGet(kss...).RawData().Raw()
+		typv := reflect.TypeOf(v)
+		typwv := reflect.TypeOf(wv)
+		if !reflect.DeepEqual(v, wv) {
+			log.WithField("path", ks).Errorf("%+v [%s] is goten, %+v [%s] is wanted.", v, typv, wv, typwv)
 		}
 	}
 }
