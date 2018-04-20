@@ -38,4 +38,5 @@
     [Language.invokes.resp]
       cost = "2ms"
       [Language.invokes.resp.json]
-        'langs,0,birthday' = 1.136185445e+09
+        'langs,0,birthday' = 1136185445.0
+        totalCount = 999.0
