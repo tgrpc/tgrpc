@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	uuid "github.com/dchest/uniuri"
 	"github.com/golang/protobuf/proto"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/toukii/bytes"
@@ -18,28 +19,31 @@ import (
 )
 
 type invocationEventHandler struct {
-	vf Verifier
+	vf     Verifier
+	method string
 }
 
-func newInvocationEventHandler(vf Verifier) *invocationEventHandler {
+func newInvocationEventHandler(vf Verifier, method string) *invocationEventHandler {
 	if !reflect.ValueOf(vf).IsNil() {
-		return &invocationEventHandler{vf: vf}
+		return &invocationEventHandler{vf: vf, method: method}
 	}
-	return &invocationEventHandler{vf: nil}
+	return &invocationEventHandler{vf: nil, method: method}
 }
 
+// md 是本次grpc请求的header，非请求的meta
 func (i *invocationEventHandler) OnResolveMethod(desc *desc.MethodDescriptor) {
-	log.Debugf("OnResolveMethod: %+v", desc.GetName())
+	// log.Debugf("OnResolveMethod: %+v", desc.GetName())
 }
 
 func (i *invocationEventHandler) OnSendHeaders(md metadata.MD) {
 	now := time.Now()
-	md["_tgrpc"] = []string{fmt.Sprintf("start_time=%d", now.UnixNano()), fmt.Sprintf("track_id=%s", "TRACKID")}
-	log.Debugf("OnSendHeaders: %+v", md)
+	trackId := uuid.New()
+	md["_tgrpc"] = []string{fmt.Sprintf("start_time=%d", now.UnixNano()), fmt.Sprintf("track_id=%s", trackId)}
+	// log.Debugf("OnSendHeaders: %+v", md)
 }
 
 func (i *invocationEventHandler) OnReceiveHeaders(md metadata.MD) {
-	log.Debugf("OnReceiveHeaders: %+v", md)
+	// log.Debugf("OnReceiveHeaders: %+v", md)
 	i.verifyCost(md)
 }
 
@@ -53,8 +57,8 @@ func (i *invocationEventHandler) OnReceiveResponse(md metadata.MD, message proto
 	if i.vf != nil {
 		i.vf.Verify(bs)
 	}
-	log.Debugf("OnReceiveResponse md: %+v", md)
-	log.WithField("OnReceiveResponse", goutils.ToString(bs)).Info()
+	// log.Debugf("OnReceiveResponse md: %+v", md)
+	log.WithField(i.method, goutils.ToString(bs)).Info()
 }
 
 func getStartTime(md metadata.MD) (int64, error) {

@@ -135,7 +135,7 @@ func (t *Tgrpc) Invoke(inv *Invoke) error {
 
 	err = grpcurl.InvokeRpc(context.Background(),
 		source, t.conn, methodName, inv.Headers,
-		newInvocationEventHandler(inv.Resp), decodeFunc(strings.NewReader(inv.Data)))
+		newInvocationEventHandler(inv.Resp, methodName), decodeFunc(strings.NewReader(inv.Data)))
 	isErr(err)
 	return err
 }
