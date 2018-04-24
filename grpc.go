@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang/protobuf/jsonpb"
@@ -22,6 +23,10 @@ var (
 	log             *logrus.Entry
 )
 
+func init() {
+	SetLog("debug")
+}
+
 func SetLog(logLevel string) {
 	lvl, err := logrus.ParseLevel(logLevel)
 	if err != nil {
@@ -34,6 +39,7 @@ func SetLog(logLevel string) {
 }
 
 type Tgrpc struct {
+	sync.Once
 	err     error
 	conn    *grpc.ClientConn
 	sources map[string]grpcurl.DescriptorSource // 缓存DescriptorSource
@@ -84,7 +90,7 @@ func (t *Tgrpc) getDescriptorSource(method string) (grpcurl.DescriptorSource, er
 		t.err = err
 		return nil, err
 	}
-	service, err := GetService([]*descriptor.FileDescriptorSet{fileDescriptorSet}, serviceName)
+	service, err := GetServiceDescriptor([]*descriptor.FileDescriptorSet{fileDescriptorSet}, serviceName)
 	if isErr(err) {
 		t.err = err
 		return nil, err
@@ -103,23 +109,26 @@ func (t *Tgrpc) getDescriptorSource(method string) (grpcurl.DescriptorSource, er
 	return source, err
 }
 
-func (t *Tgrpc) Dial() {
-	if t.isErr() {
-		return
-	}
-	log.Debugf("dial tcp:%s ...", t.Address)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-	t.conn, t.err = grpcurl.BlockingDial(ctx, "tcp", t.Address, nil, grpc.WithKeepaliveParams(
-		keepalive.ClientParameters{
-			Time:    t.KeepaliveTime.Duration,
-			Timeout: t.KeepaliveTime.Duration,
-		},
-	))
-	isErr(t.err)
+func (t *Tgrpc) dial() {
+	t.Do(func() {
+		if t.isErr() {
+			return
+		}
+		log.Debugf("dial tcp:%s ...", t.Address)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		defer cancel()
+		t.conn, t.err = grpcurl.BlockingDial(ctx, "tcp", t.Address, nil, grpc.WithKeepaliveParams(
+			keepalive.ClientParameters{
+				Time:    t.KeepaliveTime.Duration,
+				Timeout: t.KeepaliveTime.Duration,
+			},
+		))
+		isErr(t.err)
+	})
 }
 
 func (t *Tgrpc) Invoke(inv *Invoke) error {
+	t.dial()
 	if t.isErr() {
 		return t.err
 	}
@@ -135,8 +144,7 @@ func (t *Tgrpc) Invoke(inv *Invoke) error {
 
 	err = grpcurl.InvokeRpc(context.Background(),
 		source, t.conn, methodName, inv.Headers,
-		newInvocationEventHandler(inv.Resp), decodeFunc(strings.NewReader(inv.Data)))
-	isErr(err)
+		newInvocationEventHandler(inv.Resp, methodName), decodeFunc(strings.NewReader(inv.Data)))
 	return err
 }
 

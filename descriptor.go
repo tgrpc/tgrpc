@@ -115,8 +115,8 @@ func decodeDesc(descriptorSetFilePath string) (*descriptor.FileDescriptorSet, er
 	return fileDescriptorSet, nil
 }
 
-// Service is an extracted service.
-type Service struct {
+// Descriptor is an extracted service.
+type ServiceDescriptor struct {
 	*descriptor.ServiceDescriptorProto
 
 	FullyQualifiedPath  string
@@ -124,7 +124,7 @@ type Service struct {
 	FileDescriptorSet   *descriptor.FileDescriptorSet
 }
 
-func GetService(fileDescriptorSets []*descriptor.FileDescriptorSet, path string) (*Service, error) {
+func GetServiceDescriptor(fileDescriptorSets []*descriptor.FileDescriptorSet, path string) (*ServiceDescriptor, error) {
 	if len(path) == 0 {
 		return nil, fmt.Errorf("empty path")
 	}
@@ -160,7 +160,7 @@ func GetService(fileDescriptorSets []*descriptor.FileDescriptorSet, path string)
 	if serviceDescriptorProto == nil {
 		return nil, fmt.Errorf("no service for path %s", path)
 	}
-	return &Service{
+	return &ServiceDescriptor{
 		ServiceDescriptorProto: serviceDescriptorProto,
 		FullyQualifiedPath:     "." + path,
 		FileDescriptorProto:    fileDescriptorProto,

@@ -8,12 +8,15 @@ import (
 )
 
 type Invoke struct {
-	Method   string   `toml:"method"`
-	Headers  []string `toml:"headers"`
-	Data     string   `toml:"data"`
-	N        int      `toml:"n"`
-	Interval *Ms      `toml:"interval"`
-	Resp     *Resp    `toml:"resp"`
+	GrpcService string    `toml:"service"`
+	Method      string    `toml:"method"`
+	Headers     []string  `toml:"headers"`
+	Data        string    `toml:"data"`
+	N           int       `toml:"n"`
+	Interval    *Ms       `toml:"interval"`
+	Resp        *Resp     `toml:"resp"`
+	Next        *Invoke   `toml:"next"` // next invoke
+	Then        []*Invoke `toml:"then"` // then invoke: all the invokes
 }
 
 type Ms struct {
