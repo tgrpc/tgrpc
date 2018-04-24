@@ -16,7 +16,6 @@ func TestInvokeGRpcGreeter(t *testing.T) {
 		ProtoBasePath:  "$GOPATH/src/github.com/tgrpc/ngrpc",
 		IncludeImports: "helloworld/helloworld.proto",
 	}
-	tg.Dial()
 	tg.Invoke(&Invoke{
 		Method:   "helloworld.Greeter/SayHello",
 		Headers:  nil,
@@ -24,7 +23,7 @@ func TestInvokeGRpcGreeter(t *testing.T) {
 		N:        2,
 		Interval: &Ms{time.Millisecond * 100},
 		Resp: &Resp{
-			Json: map[string]string{
+			Json: map[string]interface{}{
 				"message": "Hello tgrpc",
 			},
 		},

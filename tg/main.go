@@ -37,39 +37,48 @@ func setLog(level string) {
 func main() {
 	flag.Parse()
 	if initial {
-		initSetup()
+		initrpc()
 		return
 	}
 
-	tg := Setup()
-	if len(tg) <= 0 {
-		log.Errorf("config is nil, init: tg -i")
+	_tgrpc := Setup()
+	tgrpc.SetLog(_tgrpc.LogLevel)
+	if _tgrpc.Service == nil {
+		log.Errorf("services is nil, all invokes down!")
+		return
 	}
-	for k, tgr := range tg {
-		log.WithField("tgrpc", k).Infof("exced:%t", tgr.Exced)
-		if !tgr.Exced {
-			continue
-		}
-		if tgr.Tgr == nil {
-			log.Infof("%s.Tgrpc is nil", k)
-			continue
-		}
-		tgrpc.SetLog(tgr.LogLevel)
-		tgr.Tgr.Dial()
-		for _, inv := range tgr.Invokes {
-			sg := sync.WaitGroup{}
-			n := inv.N
-			sg.Add(n)
-			for i := 0; i < n; i++ {
-				go func(i int) {
-					tgr.Tgr.Invoke(inv)
-					sg.Done()
-				}(i)
-				if inv.Interval != nil {
-					time.Sleep(time.Duration(inv.Interval.Nanoseconds()))
-				}
+	for _, ivk := range _tgrpc.Invokes {
+		Invoke(_tgrpc.Service, ivk)
+	}
+}
+
+func Invoke(service map[string]*tgrpc.Tgrpc, ivk *tgrpc.Invoke) {
+	if ivk == nil || ivk.N <= 0 {
+		return
+	}
+	sg := sync.WaitGroup{}
+	for i := 0; i < ivk.N; i++ {
+		sg.Add(1)
+		go func(i int) {
+			defer sg.Done()
+			rpc, ok := service[ivk.GrpcService]
+			if !ok {
+				log.Errorf("service:[%s] is not found!", ivk.GrpcService)
+				return
 			}
-			sg.Wait()
+
+			err := rpc.Invoke(ivk)
+			if err != nil {
+				log.Errorf("rpc resp err:%+v", err)
+			}
+			Invoke(service, ivk.Next)
+		}(i)
+		if ivk.Interval != nil {
+			time.Sleep(time.Duration(ivk.Interval.Nanoseconds()))
 		}
+	}
+	sg.Wait()
+	for _, ivk := range ivk.Then {
+		Invoke(service, ivk)
 	}
 }
