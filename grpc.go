@@ -149,7 +149,7 @@ func (t *Tgrpc) Invoke(ivk *Invoke) error {
 	if ivk.preResp != nil {
 		bs := <-ivk.preResp
 		log.Debugf("pre invoke resp:%s", bs)
-		if ivk.N > 1 && len(ivk.preResp) < cap(ivk.preResp)-1 { // 容量不够写，不要再往回放
+		if cap(ivk.preResp) == 1 || ivk.N > 1 && len(ivk.preResp) < cap(ivk.preResp)-1 { // 容量不够写，不要再往回放
 			ivk.preResp <- bs
 		}
 	}
