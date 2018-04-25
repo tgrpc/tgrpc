@@ -19,7 +19,8 @@ import (
 )
 
 var (
-	jsonpbMarshaler = &jsonpb.Marshaler{}
+	indent          = ""
+	jsonpbMarshaler = &jsonpb.Marshaler{Indent: indent}
 	log             *logrus.Entry
 )
 
@@ -145,18 +146,19 @@ func (t *Tgrpc) Invoke(ivk *Invoke) error {
 		ivk.Next.preResp = make(chan []byte, ivk.N)
 	}
 
+	data := ivk.Data
 	// pre invoke resp
 	if ivk.preResp != nil {
 		bs := <-ivk.preResp
-		log.Debugf("pre invoke resp:%s", bs)
 		if cap(ivk.preResp) == 1 || ivk.N > 1 && len(ivk.preResp) < cap(ivk.preResp)-1 { // 容量不够写，不要再往回放
 			ivk.preResp <- bs
 		}
+		data = Decode(ivk.Data, bs)
 	}
 
 	err = grpcurl.InvokeRpc(context.Background(),
 		source, t.conn, methodName, ivk.Headers,
-		newInvocationEventHandler(ivk.Resp, methodName, ivk.Next), decodeFunc(strings.NewReader(ivk.Data)))
+		newInvocationEventHandler(ivk.Resp, methodName, ivk.Next), decodeFunc(strings.NewReader(data)))
 	return err
 }
 
