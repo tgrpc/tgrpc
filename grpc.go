@@ -127,24 +127,36 @@ func (t *Tgrpc) dial() {
 	})
 }
 
-func (t *Tgrpc) Invoke(inv *Invoke) error {
+func (t *Tgrpc) Invoke(ivk *Invoke) error {
 	t.dial()
 	if t.isErr() {
 		return t.err
 	}
-	source, err := t.getDescriptorSource(inv.Method)
+	source, err := t.getDescriptorSource(ivk.Method)
 	if isErr(err) {
 		return err
 	}
 
-	methodName, err := getMethod(inv.Method)
+	methodName, err := getMethod(ivk.Method)
 	if isErr(err) {
 		return err
+	}
+	if ivk.Next != nil && ivk.Next.preResp == nil {
+		ivk.Next.preResp = make(chan []byte, ivk.N)
+	}
+
+	// pre invoke resp
+	if ivk.preResp != nil {
+		bs := <-ivk.preResp
+		log.Debugf("pre invoke resp:%s", bs)
+		if ivk.N > 1 {
+			ivk.preResp <- bs
+		}
 	}
 
 	err = grpcurl.InvokeRpc(context.Background(),
-		source, t.conn, methodName, inv.Headers,
-		newInvocationEventHandler(inv.Resp, methodName), decodeFunc(strings.NewReader(inv.Data)))
+		source, t.conn, methodName, ivk.Headers,
+		newInvocationEventHandler(ivk.Resp, methodName, ivk.Next), decodeFunc(strings.NewReader(ivk.Data)))
 	return err
 }
 

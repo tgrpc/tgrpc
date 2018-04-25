@@ -21,13 +21,14 @@ import (
 type invocationEventHandler struct {
 	vf     Verifier
 	method string
+	ivk    *Invoke
 }
 
-func newInvocationEventHandler(vf Verifier, method string) *invocationEventHandler {
+func newInvocationEventHandler(vf Verifier, method string, ivk *Invoke) *invocationEventHandler {
 	if !reflect.ValueOf(vf).IsNil() {
-		return &invocationEventHandler{vf: vf, method: method}
+		return &invocationEventHandler{vf: vf, method: method, ivk: ivk}
 	}
-	return &invocationEventHandler{vf: nil, method: method}
+	return &invocationEventHandler{vf: nil, method: method, ivk: ivk}
 }
 
 // md 是本次grpc请求的header，非请求的meta
@@ -54,6 +55,9 @@ func (i *invocationEventHandler) OnReceiveResponse(md metadata.MD, message proto
 		return
 	}
 	bs := wr.Bytes()
+	if i.ivk != nil {
+		i.ivk.preResp <- bs
+	}
 	if i.vf != nil {
 		i.vf.Verify(bs)
 	}
