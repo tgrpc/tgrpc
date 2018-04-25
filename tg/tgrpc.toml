@@ -52,13 +52,13 @@ totalCount = 999.0
 service= "Greeter"
 method = "helloworld.Greeter/SayHello"
 headers = ["customerId:123", "region:UK"]
-data = "{\"name\":\"tgrpc-tg1\"}"
+data = '{"name":"@langs,0,name!!"}'
 n = 5
 interval = "500ms"
 [invokes.next.resp]
 cost = "2ms"
 [invokes.next.resp.json]
-message = "Hello tgrpc-tg1"
+message = "Hello Golang!!"
 [[invokes.then]]
 service= "Greeter"
 method = "helloworld.Greeter/SayHello"

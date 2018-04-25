@@ -19,7 +19,8 @@ import (
 )
 
 var (
-	jsonpbMarshaler = &jsonpb.Marshaler{}
+	indent          = ""
+	jsonpbMarshaler = &jsonpb.Marshaler{Indent: indent}
 	log             *logrus.Entry
 )
 
@@ -127,24 +128,37 @@ func (t *Tgrpc) dial() {
 	})
 }
 
-func (t *Tgrpc) Invoke(inv *Invoke) error {
+func (t *Tgrpc) Invoke(ivk *Invoke) error {
 	t.dial()
 	if t.isErr() {
 		return t.err
 	}
-	source, err := t.getDescriptorSource(inv.Method)
+	source, err := t.getDescriptorSource(ivk.Method)
 	if isErr(err) {
 		return err
 	}
 
-	methodName, err := getMethod(inv.Method)
+	methodName, err := getMethod(ivk.Method)
 	if isErr(err) {
 		return err
+	}
+	if ivk.Next != nil && ivk.Next.preResp == nil {
+		ivk.Next.preResp = make(chan []byte, ivk.N)
+	}
+
+	data := ivk.Data
+	// pre invoke resp
+	if ivk.preResp != nil {
+		bs := <-ivk.preResp
+		if cap(ivk.preResp) == 1 || ivk.N > 1 && len(ivk.preResp) < cap(ivk.preResp)-1 { // 容量不够写，不要再往回放
+			ivk.preResp <- bs
+		}
+		data = Decode(ivk.Data, bs)
 	}
 
 	err = grpcurl.InvokeRpc(context.Background(),
-		source, t.conn, methodName, inv.Headers,
-		newInvocationEventHandler(inv.Resp, methodName), decodeFunc(strings.NewReader(inv.Data)))
+		source, t.conn, methodName, ivk.Headers,
+		newInvocationEventHandler(ivk.Resp, methodName, ivk.Next), decodeFunc(strings.NewReader(data)))
 	return err
 }
 

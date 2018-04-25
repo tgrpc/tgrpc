@@ -17,6 +17,8 @@ type Invoke struct {
 	Resp        *Resp     `toml:"resp"`
 	Next        *Invoke   `toml:"next"` // next invoke
 	Then        []*Invoke `toml:"then"` // then invoke: all the invokes
+
+	preResp chan []byte
 }
 
 type Ms struct {
