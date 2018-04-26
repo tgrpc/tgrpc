@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	indent          = ""
+	indent          = "	"
 	jsonpbMarshaler = &jsonpb.Marshaler{Indent: indent}
 	log             *logrus.Entry
 )

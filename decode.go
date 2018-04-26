@@ -35,32 +35,56 @@ func Decode(raw string, prebs []byte) string {
 				continue
 			}
 			paths := strings.Split(_path_, ",")
-			val := js.ArrGet(paths...).RawData()
+			val := js.ArrGet(paths...).RawData().Raw()
 			if val == nil {
 				continue
 			}
-			ret = strings.Replace(ret, fmt.Sprintf(`"@%s`, _path_), fmt.Sprintf(`"%+v`, val), -1)
+			vv := value(val)
+			if vv != "" {
+				log.Debugf("%#v %+v ==> %s", val, val, vv)
+				ret = strings.Replace(ret, fmt.Sprintf(`@%s`, _path_), fmt.Sprintf(`%s`, vv), -1)
+			} else {
+				ret = strings.Replace(ret, fmt.Sprintf(`@%s`, _path_), fmt.Sprintf(`%+v`, val), -1)
+			}
 		}
 	}
 	return ret
 }
 
-// 返回符合jsnm ArrGet的路径，可以以@开头
+func value(v interface{}) string {
+	switch typ := v.(type) {
+	case int:
+		return fmt.Sprint(v.(int))
+	case int32:
+		return fmt.Sprint(v.(int32))
+	case int64:
+		return fmt.Sprint(v.(int64))
+	case float32:
+		vv := v.(float32)
+		return fmt.Sprint(int64(vv))
+	case float64:
+		vv := v.(float64)
+		return fmt.Sprint(int64(vv))
+	case string:
+		return fmt.Sprint(v)
+	default:
+		log.Infof("%+v, typ: %+v", v, typ)
+	}
+	return ""
+}
+
+// 返回符合jsnm ArrGet的路径，以@开头,以#结尾
 func getLetterStr(bs []byte) string {
 	idx := 1
 	if bs[0] != at {
 		idx = 0
 	}
 	rs := bytes.Runes(bs)
-	// size := len(rs)
-	// for i := idx; i < size; i++ {
-	for i, it := range rs {
-		if i < idx || unicode.IsLetter(it) || unicode.IsNumber(it) || it == comma || it == dblquot {
+	size := len(rs)
+	for i := idx; i < size; i++ {
+		if unicode.IsLetter(rs[i]) || unicode.IsNumber(rs[i]) || rs[i] == comma || rs[i] == dblquot {
 			continue
 		}
-		// if i <= idx {
-		// 	return ""
-		// }
 		return goutils.ToString(bs[idx:i])
 	}
 	return goutils.ToString(bs[idx:])
