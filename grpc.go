@@ -154,6 +154,7 @@ func (t *Tgrpc) Invoke(ivk *Invoke) error {
 			ivk.preResp <- bs
 		}
 		data = Decode(ivk.Data, bs)
+		log.Infof("data: %+v", data)
 	}
 
 	err = grpcurl.InvokeRpc(context.Background(),
