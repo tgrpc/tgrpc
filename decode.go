@@ -20,32 +20,71 @@ var (
 )
 
 func Decode(raw string, prebs []byte) string {
-	var v iv
-	err := json.Unmarshal([]byte(raw), &v)
-	if isErr(err) {
-		return raw
-	}
-	js := jsnm.BytesFmt(prebs)
 	ret := raw
-	for _, it := range v {
-		switch it.(type) {
-		case string:
-			_path_ := getLetterStr([]byte(fmt.Sprint(it)))
-			if _path_ == "" {
-				continue
-			}
-			paths := strings.Split(_path_, ",")
-			val := js.ArrGet(paths...).RawData().Raw()
-			if val == nil {
-				continue
-			}
-			vv := value(val)
-			if vv != "" {
-				log.Debugf("%#v %+v ==> %s", val, val, vv)
-				ret = strings.Replace(ret, fmt.Sprintf(`@%s`, _path_), fmt.Sprintf(`%s`, vv), -1)
-			} else {
-				ret = strings.Replace(ret, fmt.Sprintf(`@%s`, _path_), fmt.Sprintf(`%+v`, val), -1)
-			}
+	js := jsnm.BytesFmt(prebs)
+	allpaths := subDecode(raw, true)
+	for _, it := range allpaths {
+		paths := strings.Split(it, ",")
+		val := js.ArrGet(paths...).RawData().Raw()
+		if val == nil {
+			continue
+		}
+		vv := value(val)
+		if vv != "" {
+			ret = strings.Replace(ret, fmt.Sprintf(`@%s`, it), fmt.Sprintf(`%s`, vv), -1)
+		}
+	}
+	return ret
+}
+
+func subDecode(raw interface{}, first bool) []string {
+	if first {
+		var vals interface{}
+		err := json.Unmarshal([]byte(fmt.Sprint(raw)), &vals)
+		if err != nil {
+			log.Errorf("%+v, err:%+v", raw, err)
+			return nil
+		}
+		return decodeMap(vals)
+	}
+	switch typ := raw.(type) {
+	case string:
+		if retlet := getLetterStr([]byte(fmt.Sprint(raw))); retlet != "" {
+			return []string{retlet}
+		}
+	case []interface{}:
+		return decodeSlice(raw)
+	case map[string]interface{}:
+		return decodeMap(raw)
+	default:
+		log.Debugf("%+v decode unsupported!", typ)
+	}
+	return nil
+}
+
+func decodeMap(raw interface{}) []string {
+	vs, ok := raw.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	ret := make([]string, 0, 1)
+	for _, subit := range vs {
+		if subret := subDecode(subit, false); len(subret) > 0 {
+			ret = append(ret, subret...)
+		}
+	}
+	return ret
+}
+
+func decodeSlice(raw interface{}) []string {
+	vs, ok := raw.([]interface{})
+	if !ok {
+		return nil
+	}
+	ret := make([]string, 0, 1)
+	for _, subit := range vs {
+		if subret := subDecode(subit, false); len(subret) > 0 {
+			ret = append(ret, subret...)
 		}
 	}
 	return ret
@@ -68,24 +107,23 @@ func value(v interface{}) string {
 	case string:
 		return fmt.Sprint(v)
 	default:
-		log.Infof("%+v, typ: %+v", v, typ)
+		log.Infof("%+v value unsupported!", typ)
 	}
 	return ""
 }
 
 // 返回符合jsnm ArrGet的路径，以@开头,以#结尾
 func getLetterStr(bs []byte) string {
-	idx := 1
 	if bs[0] != at {
-		idx = 0
+		return ""
 	}
 	rs := bytes.Runes(bs)
 	size := len(rs)
-	for i := idx; i < size; i++ {
+	for i := 1; i < size; i++ {
 		if unicode.IsLetter(rs[i]) || unicode.IsNumber(rs[i]) || rs[i] == comma || rs[i] == dblquot {
 			continue
 		}
-		return goutils.ToString(bs[idx:i])
+		return goutils.ToString(bs[1:i])
 	}
-	return goutils.ToString(bs[idx:])
+	return goutils.ToString(bs[1:])
 }

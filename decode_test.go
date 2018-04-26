@@ -41,6 +41,11 @@ var (
 			bs:  []byte(`{"langs":[{"name":"Golang"}]}`),
 			des: `{"name":"Golang"}`,
 		},
+		// {
+		// 	raw: `{"names":["@langs,0,name"]}`,
+		// 	bs:  []byte(`{"langs":[{"name":"Golang"}]}`),
+		// 	des: `{"name":["Golang"]}`,
+		// },
 	}
 )
 
@@ -69,7 +74,7 @@ func TestDecode(t *testing.T) {
 	t.Run("getLetterStr", func(t *testing.T) {
 		ts := [][2]string{
 			[2]string{"@msg!", "msg"},
-			[2]string{"msg!", "msg"},
+			[2]string{"msg!", ""},
 			[2]string{"!msg!", ""},
 			[2]string{"@msg,0", "msg,0"},
 			[2]string{"@msg,0,count", "msg,0,count"},
@@ -115,4 +120,73 @@ func TestValue(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestSubDecode(t *testing.T) {
+	t.Run("SubDecode", func(t *testing.T) {
+		ts := []struct {
+			i interface{}
+			v []string
+		}{
+			{
+				i: `{"name":"Golang"}`,
+				v: nil,
+			},
+			{
+				i: `{"name":"@Golang"}`,
+				v: []string{"Golang"},
+			},
+			{
+				i: `{"name":"@Golang!"}`,
+				v: []string{"Golang"},
+			},
+			{
+				i: `{"name":["@Golang!","@Golang!"]}`,
+				v: []string{"Golang", "Golang"},
+			},
+			{
+				i: `{"name":["@Golang!","@Golang!"],"version":{"prev0":{"val":"@0,name"}}}`,
+				v: []string{"Golang", "Golang", "0,name"},
+			},
+			{
+				i: `{"name":["@Golang!","@Golang!"],"version":{"2017":{"prev":["@0,name","@1,name","@2,name"]}}}`,
+				v: []string{"Golang", "Golang", "0,name", "1,name", "2,name"},
+			},
+			{
+				i: `{"name":["@Golang!","@Golang!"],"version":[["@0,name","@1,name","@2,name"]]}`,
+				v: []string{"Golang", "Golang", "0,name", "1,name", "2,name"},
+			},
+		}
+
+		for _, it := range ts {
+			vv := subDecode(it.i, true)
+			if len(vv) <= 0 && len(it.v) <= 0 {
+				continue
+			}
+			if !sliceEqual(it.v, vv) {
+				t.Errorf("%+v ==> %s, but: %s", it.i, it.v, vv)
+			}
+		}
+	})
+}
+
+// slice 的值和个数相等
+func sliceEqual(sl1, sl2 []string) bool {
+	s1, s2 := len(sl1), len(sl2)
+	if s1 != s2 {
+		return false
+	}
+	type tempty struct{}
+	var empty tempty
+	m := make(map[string]tempty, s1)
+	for _, it := range sl1 {
+		m[it] = empty
+	}
+	var ex bool
+	for _, it := range sl2 {
+		if _, ex = m[it]; !ex {
+			return false
+		}
+	}
+	return true
 }
