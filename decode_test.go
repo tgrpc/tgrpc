@@ -41,11 +41,16 @@ var (
 			bs:  []byte(`{"langs":[{"name":"Golang"}]}`),
 			des: `{"name":"Golang"}`,
 		},
-		// {
-		// 	raw: `{"names":["@langs,0,name"]}`,
-		// 	bs:  []byte(`{"langs":[{"name":"Golang"}]}`),
-		// 	des: `{"name":["Golang"]}`,
-		// },
+		{
+			raw: `{"names":["@langs,0,name"]}`,
+			bs:  []byte(`{"langs":[{"name":"Golang"}]}`),
+			des: `{"names":["Golang"]}`,
+		},
+		{
+			raw: `{"names":["@Golang!","@Golang!"],"version":[["@versions,0,name","@versions,1,desp","@versions,2,version"]]}`,
+			bs:  []byte(`{"Golang":"go1.0","versions":[{"name":"v1.0"},{"desp":"desp v1.0"},{"version":1.0}]}`),
+			des: `{"names":["go1.0!","go1.0!"],"version":[["v1.0","desp v1.0","1"]]}`, // 1.0 ==> "1"
+		},
 	}
 )
 
@@ -99,7 +104,6 @@ func TestValue(t *testing.T) {
 			v string
 		}{
 			{
-				// i: int64(25580228382294197),
 				i: 25580228382294197,
 				v: "25580228382294197",
 			},
