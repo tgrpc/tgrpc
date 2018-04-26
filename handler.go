@@ -58,7 +58,8 @@ func (i *invocationEventHandler) OnReceiveResponse(md metadata.MD, message proto
 	if i.vf != nil {
 		i.vf.Verify(bs)
 	}
-	log.WithField(i.method, goutils.ToString(bs)).Info()
+	fmt.Printf("%s ==> %s\n", i.method, goutils.ToString(bs))
+	// log.WithField(i.method, goutils.ToString(bs)).Info()
 }
 
 func getStartTime(md metadata.MD) (int64, error) {
