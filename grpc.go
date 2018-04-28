@@ -41,6 +41,7 @@ func SetLog(logLevel string) {
 
 type Tgrpc struct {
 	sync.Once
+	sync.Mutex
 	err     error
 	conn    *grpc.ClientConn
 	sources map[string]grpcurl.DescriptorSource // 缓存DescriptorSource
@@ -71,6 +72,8 @@ func (t *Tgrpc) isErr() bool {
 }
 
 func (t *Tgrpc) getDescriptorSource(method string) (grpcurl.DescriptorSource, error) {
+	t.Lock()
+	defer t.Unlock()
 	if t.isErr() {
 		return nil, t.err
 	}
@@ -154,13 +157,50 @@ func (t *Tgrpc) Invoke(ivk *Invoke) error {
 			ivk.preResp <- bs
 		}
 		data = Decode(ivk.Data, bs)
-		log.Infof("data: %+v", data)
+		if !Silence {
+			log.Infof("data: %+v", data)
+		}
 	}
 
 	err = grpcurl.InvokeRpc(context.Background(),
 		source, t.conn, methodName, ivk.Headers,
-		newInvocationEventHandler(ivk.Resp, methodName, ivk.Next), decodeFunc(strings.NewReader(data)))
+		newInvocationEventHandler(ivk.Resp, methodName, ivk, ivk.Next), decodeFunc(strings.NewReader(data)))
 	return err
+}
+
+func Invokes(service map[string]*Tgrpc, ivk *Invoke) {
+	if ivk == nil || ivk.N <= 0 {
+		return
+	}
+	sg := sync.WaitGroup{}
+	for i := 0; i < ivk.N; i++ {
+		sg.Add(1)
+		go func(i int) {
+			defer sg.Done()
+			rpc, ok := service[ivk.GrpcService]
+			if !ok {
+				log.Errorf("service:[%s] is not found!", ivk.GrpcService)
+				return
+			}
+
+			err := rpc.Invoke(ivk)
+			if err != nil {
+				log.Errorf("rpc resp err:%+v", err)
+			}
+			Invokes(service, ivk.Next)
+		}(i)
+		if ivk.Interval != nil {
+			time.Sleep(time.Duration(ivk.Interval.Nanoseconds()))
+		}
+	}
+	sg.Wait()
+	// if ivk.N {
+	ivk.Clozch <- true
+	<-ivk.WaitRet
+	// }
+	for _, ivk := range ivk.Then {
+		Invokes(service, ivk)
+	}
 }
 
 func decodeFunc(reader io.Reader) func() ([]byte, error) {
