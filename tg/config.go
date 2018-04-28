@@ -75,14 +75,14 @@ func initrpc() {
 		Service: map[string]*tgrpc.Tgrpc{
 			"Greeter": &tgrpc.Tgrpc{
 				Address:        "localhost:2080",
-				KeepaliveTime:  &tgrpc.Duration{time.Second * 100},
+				KeepaliveTime:  &tgrpc.Second{time.Second * 100},
 				ReuseDesc:      true,
 				ProtoBasePath:  "$GOPATH/src/github.com/tgrpc/ngrpc",
 				IncludeImports: "helloworld/helloworld.proto",
 			},
 			"LangService": &tgrpc.Tgrpc{
 				Address:        "localhost:2080",
-				KeepaliveTime:  &tgrpc.Duration{time.Second * 100},
+				KeepaliveTime:  &tgrpc.Second{time.Second * 100},
 				ReuseDesc:      true,
 				ProtoBasePath:  "$GOPATH/src/github.com/tgrpc/ngrpc",
 				IncludeImports: "helloworld/lang.proto",

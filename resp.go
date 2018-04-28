@@ -1,6 +1,7 @@
 package tgrpc
 
 import (
+	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
@@ -12,8 +13,12 @@ import (
 
 type Verifier interface {
 	Verify(bs []byte)
-	VerifyCost(cost int64)
+	VerifyCost(cost int64, costch chan int64)
 }
+
+var (
+	ns = float64(1e6)
+)
 
 type Resp struct {
 	Cost   *Ms                    `toml:"cost"`
@@ -57,9 +62,12 @@ func (r *Resp) VerifyBody(bs []byte) {
 	}
 }
 
-func (r *Resp) VerifyCost(cost int64) {
+func (r *Resp) VerifyCost(cost int64, costch chan int64) {
 	if r.Cost == nil {
 		return
+	}
+	if cap(costch) > 1 {
+		costch <- cost
 	}
 	dcost := time.Duration(cost)
 	ns := r.Cost.Nanoseconds()
@@ -71,4 +79,34 @@ func (r *Resp) VerifyCost(cost int64) {
 	} else {
 		log.Debugf("time cost: %+v / %d ms;", dcost, ms)
 	}
+}
+
+func summary(key string, ch chan int64, cloz, wait chan bool, n int) {
+	sum := 0.0
+	size := 0
+	max, min := float64(0.0), float64(1e10)
+	for {
+		select {
+		case cost := <-ch:
+			fcost := float64(cost)
+			sum += fcost
+			size++
+			if fcost > max {
+				max = fcost
+			}
+			if fcost < min {
+				min = fcost
+			}
+		case <-cloz:
+			goto SUMARY
+		}
+	}
+
+SUMARY:
+	if size <= 0 {
+		size = 1
+	}
+	avg := sum / float64(size)
+	fmt.Printf("%s size: %d\n avg: %f ms\n max: %f ms\n min: %f ms\n", key, size, avg/ns, max/ns, min/ns)
+	wait <- true
 }
