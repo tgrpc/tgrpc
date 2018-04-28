@@ -20,6 +20,9 @@ var (
 )
 
 func Decode(raw string, prebs []byte) string {
+	if raw == "" {
+		return ""
+	}
 	ret := raw
 	js := jsnm.BytesFmt(prebs)
 	allpaths := subDecode(raw, true)
