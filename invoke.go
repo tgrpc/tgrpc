@@ -1,11 +1,7 @@
 package tgrpc
 
 import (
-	"fmt"
 	"sync"
-	"time"
-
-	"github.com/toukii/goutils"
 )
 
 type Invoke struct {
@@ -27,27 +23,10 @@ type Invoke struct {
 }
 
 func (i *Invoke) Init() {
-	i.WaitRet = make(chan bool, 1)
-	i.Clozch = make(chan bool, 1)
-
 	if i.N > 1 && i.Resp != nil {
+		i.WaitRet = make(chan bool, 1)
+		i.Clozch = make(chan bool, 1)
 		i.Costch = make(chan int64, 10)
 		go summary(i.Method, i.Costch, i.Clozch, i.WaitRet, i.N)
-	} else {
-		i.WaitRet <- true
 	}
-}
-
-type Ms struct {
-	time.Duration
-}
-
-func (d *Ms) UnmarshalText(text []byte) error {
-	var err error
-	d.Duration, err = time.ParseDuration(goutils.ToString(text))
-	return err
-}
-
-func (d *Ms) MarshalText() ([]byte, error) {
-	return goutils.ToByte(fmt.Sprintf("%dms", int64(d.Nanoseconds()/1e6))), nil
 }
