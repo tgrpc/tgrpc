@@ -13,7 +13,6 @@ import (
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/sirupsen/logrus"
 	"github.com/tgrpc/grpcurl"
-	"github.com/toukii/goutils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 )
@@ -46,25 +45,11 @@ type Tgrpc struct {
 	conn    *grpc.ClientConn
 	sources map[string]grpcurl.DescriptorSource // 缓存DescriptorSource
 
-	Address        string    `toml:"address"`
-	KeepaliveTime  *Duration `toml:"keepalive"`
-	ReuseDesc      bool      `toml:"reuse_desc"`
-	ProtoBasePath  string    `toml:"proto_base_path"` // proto 文件根目录
-	IncludeImports string    `toml:"include_imports"` // 要执行的方法所在的proto
-}
-
-type Duration struct {
-	time.Duration
-}
-
-func (d *Duration) UnmarshalText(text []byte) error {
-	var err error
-	d.Duration, err = time.ParseDuration(goutils.ToString(text))
-	return err
-}
-
-func (d *Duration) MarshalText() ([]byte, error) {
-	return goutils.ToByte(fmt.Sprintf("%ds", int64(d.Seconds()))), nil
+	Address        string  `toml:"address"`
+	KeepaliveTime  *Second `toml:"keepalive"`
+	ReuseDesc      bool    `toml:"reuse_desc"`
+	ProtoBasePath  string  `toml:"proto_base_path"` // proto 文件根目录
+	IncludeImports string  `toml:"include_imports"` // 要执行的方法所在的proto
 }
 
 func (t *Tgrpc) isErr() bool {
@@ -194,10 +179,10 @@ func Invokes(service map[string]*Tgrpc, ivk *Invoke) {
 		}
 	}
 	sg.Wait()
-	// if ivk.N {
-	ivk.Clozch <- true
-	<-ivk.WaitRet
-	// }
+	if ivk.N > 1 {
+		ivk.Clozch <- true
+		<-ivk.WaitRet
+	}
 	for _, ivk := range ivk.Then {
 		Invokes(service, ivk)
 	}
