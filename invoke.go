@@ -2,6 +2,7 @@ package tgrpc
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/toukii/goutils"
@@ -19,6 +20,22 @@ type Invoke struct {
 	Then        []*Invoke `toml:"then"` // then invoke: all the invokes
 
 	preResp chan []byte
+	sync.Once
+	Costch  chan int64
+	Clozch  chan bool
+	WaitRet chan bool
+}
+
+func (i *Invoke) Init() {
+	i.WaitRet = make(chan bool, 1)
+	i.Clozch = make(chan bool, 1)
+
+	if i.N > 1 && i.Resp != nil {
+		i.Costch = make(chan int64, 10)
+		go summary(i.Method, i.Costch, i.Clozch, i.WaitRet, i.N)
+	} else {
+		i.WaitRet <- true
+	}
 }
 
 type Ms struct {

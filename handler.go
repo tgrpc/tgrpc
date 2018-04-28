@@ -18,17 +18,27 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+var (
+	Silence bool
+)
+
 type invocationEventHandler struct {
-	vf     Verifier
-	method string
-	ivk    *Invoke
+	vf           Verifier
+	method       string
+	ivk, nextIvk *Invoke
 }
 
-func newInvocationEventHandler(vf Verifier, method string, ivk *Invoke) *invocationEventHandler {
-	if !reflect.ValueOf(vf).IsNil() {
-		return &invocationEventHandler{vf: vf, method: method, ivk: ivk}
+func newInvocationEventHandler(vf Verifier, method string, ivk, nextIvk *Invoke) *invocationEventHandler {
+	handler := &invocationEventHandler{
+		method:  method,
+		ivk:     ivk,
+		nextIvk: nextIvk,
 	}
-	return &invocationEventHandler{vf: nil, method: method, ivk: ivk}
+	ivk.Do(ivk.Init)
+	if !reflect.ValueOf(vf).IsNil() {
+		handler.vf = vf
+	}
+	return handler
 }
 
 // md 是本次grpc请求的header，非请求的meta
@@ -52,14 +62,16 @@ func (i *invocationEventHandler) OnReceiveResponse(md metadata.MD, message proto
 		return
 	}
 	bs := wr.Bytes()
-	if i.ivk != nil {
-		i.ivk.preResp <- bs
+	if i.nextIvk != nil {
+		i.nextIvk.preResp <- bs
 	}
 	if i.vf != nil {
 		i.vf.Verify(bs)
 	}
-	fmt.Printf("%s ==> %s\n", i.method, goutils.ToString(bs))
 	// log.WithField(i.method, goutils.ToString(bs)).Info()
+	if !Silence {
+		fmt.Printf("%s ==> %s\n", i.method, goutils.ToString(bs))
+	}
 }
 
 func getStartTime(md metadata.MD) (int64, error) {
@@ -82,7 +94,8 @@ func (i *invocationEventHandler) verifyCost(md metadata.MD) {
 	if i.vf != nil {
 		startTime, err := getStartTime(md)
 		if !isErr(err) {
-			i.vf.VerifyCost(time.Now().UnixNano() - startTime)
+			ns := time.Now().UnixNano() - startTime
+			i.vf.VerifyCost(ns, i.ivk.Costch)
 		}
 	}
 }
