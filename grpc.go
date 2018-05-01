@@ -161,10 +161,10 @@ func Invokes(service map[string]*Tgrpc, ivk *Invoke) {
 	for i := 0; i < ivk.N; i++ {
 		sg.Add(1)
 		go func(i int) {
-			defer sg.Done()
 			rpc, ok := service[ivk.GrpcService]
 			if !ok {
 				log.Errorf("service:[%s] is not found!", ivk.GrpcService)
+				sg.Done()
 				return
 			}
 
@@ -172,6 +172,7 @@ func Invokes(service map[string]*Tgrpc, ivk *Invoke) {
 			if err != nil {
 				log.Errorf("rpc resp err:%+v", err)
 			}
+			sg.Done()
 			Invokes(service, ivk.Next)
 		}(i)
 		if ivk.Interval != nil {
