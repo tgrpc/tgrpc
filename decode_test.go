@@ -47,9 +47,14 @@ var (
 			des: `{"names":["Golang"]}`,
 		},
 		{
-			raw: `{"names":["@Golang!","@Golang!"],"version":[["@versions,0,name","@versions,1,desp","@versions,2,version"]]}`,
-			bs:  []byte(`{"Golang":"go1.0","versions":[{"name":"v1.0"},{"desp":"desp v1.0"},{"version":1.0}]}`),
-			des: `{"names":["go1.0!","go1.0!"],"version":[["v1.0","desp v1.0","1"]]}`, // 1.0 ==> "1"
+			raw: `{"vals":["@vals,0,i1"]}`,
+			bs:  []byte(`{"vals":[{"i1":100}]}`),
+			des: `{"vals":[100]}`,
+		},
+		{
+			raw: `{"names":["@Golang!","@Golang!"],"version":[["@versions,0,name","@versions,1,desp","@versions,2,version","@versions,3,version"]]}`,
+			bs:  []byte(`{"Golang":"go1.0","versions":[{"name":"v1.0"},{"desp":"desp v1.0"},{"version":1.0},{"version":1.2}]}`),
+			des: `{"names":["go1.0!","go1.0!"],"version":[["v1.0","desp v1.0",1,1.2]]}`, // 1.0 ==> 1
 		},
 	}
 )
@@ -118,7 +123,7 @@ func TestValue(t *testing.T) {
 		}
 
 		for _, it := range ts {
-			vv := value(it.i)
+			vv, _ := value(it.i)
 			if !strings.EqualFold(vv, it.v) {
 				t.Errorf("%+v ==> %s, but: %s", it.i, it.v, vv)
 			}

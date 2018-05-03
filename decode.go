@@ -32,8 +32,12 @@ func Decode(raw string, prebs []byte) string {
 		if val == nil {
 			continue
 		}
-		vv := value(val)
+		vv, typ := value(val)
 		if vv != "" {
+			if typ != "string" && strings.Contains(ret, fmt.Sprintf(`"@%s"`, it)) {
+				log.Debugf("%s typ:%s", vv, typ)
+				ret = strings.Replace(ret, fmt.Sprintf(`"@%s"`, it), fmt.Sprintf(`%s`, vv), -1)
+			}
 			ret = strings.Replace(ret, fmt.Sprintf(`@%s`, it), fmt.Sprintf(`%s`, vv), -1)
 		}
 	}
@@ -93,26 +97,26 @@ func decodeSlice(raw interface{}) []string {
 	return ret
 }
 
-func value(v interface{}) string {
+func value(v interface{}) (string, string) {
 	switch typ := v.(type) {
 	case int:
-		return fmt.Sprint(v.(int))
+		return fmt.Sprint(v.(int)), "int"
 	case int32:
-		return fmt.Sprint(v.(int32))
+		return fmt.Sprint(v.(int32)), "int32"
 	case int64:
-		return fmt.Sprint(v.(int64))
+		return fmt.Sprint(v.(int64)), "int64"
 	case float32:
 		vv := v.(float32)
-		return fmt.Sprint(int64(vv))
+		return fmt.Sprint(int64(vv)), "float32"
 	case float64:
 		vv := v.(float64)
-		return fmt.Sprint(int64(vv))
+		return fmt.Sprint(vv * 1.0), "float64"
 	case string:
-		return fmt.Sprint(v)
+		return fmt.Sprint(v), "string"
 	default:
 		log.Infof("%+v value unsupported!", typ)
 	}
-	return ""
+	return "", "unsupport"
 }
 
 // 返回符合jsnm ArrGet的路径，以@开头,以#结尾
