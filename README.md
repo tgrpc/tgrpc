@@ -16,6 +16,20 @@ tg -c tgrpc.toml
 ```
 DEBU[0000] dial tcp:localhost:2080 ...
 DEBU[0000] use exist desc                                FileDescriptorSet=.helloworld.Greeter.pbin
+ERRO[0000] time cost: 4.05723ms more than 2 ms;
+helloworld.Greeter/SayHello ==> {
+	"message": "Hello tgrpc-tg1"
+}
+```
+
+
+```
+tg -s
+```
+
+```
+DEBU[0000] dial tcp:localhost:2080 ...
+DEBU[0000] use exist desc                                FileDescriptorSet=.helloworld.Greeter.pbin
 ERRO[0000] time cost: 3.41066ms more than 2 ms;
 DEBU[0000] dial tcp:localhost:2080 ...
 DEBU[0000] use exist desc                                FileDescriptorSet=.helloworld.LangService.pbin
@@ -33,18 +47,6 @@ helloworld.Greeter/SayHello size: 3
  min: 1.772520 ms
 ```
 
-```
-tg -s
-```
-
-```
-DEBU[0000] dial tcp:localhost:2080 ...
-DEBU[0000] use exist desc                                FileDescriptorSet=.helloworld.Greeter.pbin
-ERRO[0000] time cost: 4.05723ms more than 2 ms;
-helloworld.Greeter/SayHello ==> {
-	"message": "Hello tgrpc-tg1"
-}
-```
 
 ## todo
 
