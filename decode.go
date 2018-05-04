@@ -35,10 +35,9 @@ func Decode(raw string, prebs []byte) string {
 		vv, typ := value(val)
 		if vv != "" {
 			if typ != "string" && strings.Contains(ret, fmt.Sprintf(`"@%s"`, it)) {
-				log.Debugf("%s typ:%s", vv, typ)
 				ret = strings.Replace(ret, fmt.Sprintf(`"@%s"`, it), fmt.Sprintf(`%s`, vv), -1)
 			}
-			ret = strings.Replace(ret, fmt.Sprintf(`@%s`, it), fmt.Sprintf(`%s`, vv), -1)
+			ret = strings.Replace(ret, fmt.Sprintf(`"@%s`, it), fmt.Sprintf(`"%s`, vv), -1)
 		}
 	}
 	return ret
