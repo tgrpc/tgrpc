@@ -22,6 +22,11 @@ var (
 			des: `{"name":"success!"}`,
 		},
 		{
+			raw: `{"name":"@msg!@msg"}`,
+			bs:  []byte(`{"msg":"success!"}`),
+			des: `{"name":"success!!@msg"}`,
+		},
+		{
 			raw: `{"name":"@msg!"}`,
 			bs:  []byte(`{"msg":"success!"}`),
 			des: `{"name":"success!!"}`,
