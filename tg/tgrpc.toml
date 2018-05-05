@@ -20,7 +20,7 @@ service= "Greeter"
 method = "helloworld.Greeter/SayHello"
 headers = ["customerId:123", "region:UK"]
 data = "{\"name\":\"tgrpc-tg1\"}"
-n = 1
+# n = 1
 interval = "200ms"
 [invokes.resp]
 cost = "2ms"
@@ -48,6 +48,7 @@ totalCount = 999.0
 'langs,1,versions,0,vf64s' = [111.0,222.0]
 'langs,1,versions,0,vstrs,0' = 'str1'
 'langs,1,versions,0,vstrs' = ['str1','str2']
+'langs,1,versions,0,vstrs,$len' = 2
 [invokes.next]
 service= "Greeter"
 method = "helloworld.Greeter/SayHello"
