@@ -172,8 +172,8 @@ func Invokes(service map[string]*Tgrpc, ivk *Invoke) {
 			if err != nil {
 				log.Errorf("rpc resp err:%+v", err)
 			}
-			Invokes(service, ivk.Next)
 			sg.Done()
+			Invokes(service, ivk.Next)
 		}(i)
 		if ivk.Interval != nil {
 			time.Sleep(time.Duration(ivk.Interval.Nanoseconds()))
