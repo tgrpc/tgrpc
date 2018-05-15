@@ -20,7 +20,7 @@ service= "Greeter"
 method = "helloworld.Greeter/SayHello"
 headers = ["customerId:123", "region:UK"]
 data = "{\"name\":\"tgrpc-tg1\"}"
-n = 1
+n = 10
 interval = "200ms"
 [invokes.resp]
 cost = "2ms"

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -33,10 +34,30 @@ func (r *Resp) Verify(bs []byte) {
 	r.VerifyBody(bs)
 }
 
+func (r *Resp) verifyArrLen(js *jsnm.Jsnm, wantLen int, path ...string) (bool, int) {
+	arr := js.ArrGet(path...).Arr()
+	l := len(arr)
+	if l != wantLen {
+		return false, l
+	}
+	return true, l
+}
+
 func (r *Resp) VerifyJson(bs []byte) {
 	js := jsnm.BytesFmt(bs)
 	for ks, wv := range r.Json {
 		kss := strings.Split(ks, ",")
+		if kss[len(kss)-1] == "$len" {
+			wantLen, err := strconv.Atoi(fmt.Sprint(wv))
+			if err == nil {
+				if oklen, l := r.verifyArrLen(js, wantLen, kss[:len(kss)-1]...); !oklen {
+					log.Errorf("%s, want-len:%d, got:%d", ks, wantLen, l)
+				}
+				continue
+			} else {
+				log.WithField("path", ks).Errorf("want-len(%+v) is not int!", wv)
+			}
+		}
 		v := js.ArrGet(kss...).RawData().Raw()
 		typv := reflect.TypeOf(v)
 		typwv := reflect.TypeOf(wv)
