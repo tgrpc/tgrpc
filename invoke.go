@@ -23,16 +23,10 @@ type Invoke struct {
 }
 
 func (i *Invoke) Init() {
-	log.Infof("%s init", i.Method)
 	if i.N > 1 && i.Resp != nil {
 		i.WaitRet = make(chan bool, 1)
 		i.Clozch = make(chan bool, 1)
 		i.Costch = make(chan int64, 10)
 		go summary(i.Method, i.Costch, i.Clozch, i.WaitRet, i.N)
-	} else {
-		go func() {
-			<-i.Clozch
-			i.WaitRet <- true
-		}()
 	}
 }

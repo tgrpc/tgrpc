@@ -180,7 +180,7 @@ func Invokes(service map[string]*Tgrpc, ivk *Invoke) {
 		}
 	}
 	sg.Wait()
-	if ivk.N > 1 {
+	if ivk.N > 1 && ivk.Resp != nil {
 		ivk.Clozch <- true
 		<-ivk.WaitRet
 	}
