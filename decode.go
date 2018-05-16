@@ -34,6 +34,27 @@ func TrimPath(paths []string) []string {
 	return paths
 }
 
+func decodeRange(js *jsnm.Jsnm, raw, pathStr string) ([]string, string) {
+	arr := js.Arr()
+	retsize := len(arr)
+	if retsize <= 0 {
+		return nil, ""
+	}
+	ret := make([]string, retsize)
+	for i, it := range arr {
+		var v string
+		bs, err := jsonen(it.RawData().Raw())
+		if err == nil {
+			v = string(bs)
+		} else {
+			v = fmt.Sprint(it.RawData().Raw())
+		}
+
+		ret[i] = strings.Replace(raw, fmt.Sprintf(`"@%s"`, pathStr), v, 1)
+	}
+	return ret, pathStr
+}
+
 func Decode(raw string, prebs []byte) ([]string, string) {
 	if raw == "" {
 		return []string{""}, ""
@@ -43,7 +64,6 @@ func Decode(raw string, prebs []byte) ([]string, string) {
 	allpaths := subDecode(raw, true)
 	for _, it := range allpaths {
 		rawpaths := strings.Split(it, ",")
-		log.Infof("rawpaths:%+v", rawpaths)
 		paths := TrimPath(rawpaths)
 		size := len(rawpaths)
 		if size <= 0 {
