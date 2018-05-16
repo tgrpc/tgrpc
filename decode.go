@@ -17,20 +17,59 @@ var (
 	at      = "@"[0]
 	comma   = rune(","[0])
 	dblquot = rune(`"`[0])
+	dollar  = rune(`$`[0])
+	ranger  = "$range"
 )
 
-func Decode(raw string, prebs []byte) string {
+func jsonen(i interface{}) ([]byte, error) {
+	return json.Marshal(i)
+}
+
+func TrimPath(paths []string) []string {
+	for i, it := range paths {
+		if it == "" || it == ranger {
+			return paths[:i]
+		}
+	}
+	return paths
+}
+
+func Decode(raw string, prebs []byte) ([]string, string) {
 	if raw == "" {
-		return ""
+		return []string{""}, ""
 	}
 	ret := raw
 	js := jsnm.BytesFmt(prebs)
 	allpaths := subDecode(raw, true)
 	for _, it := range allpaths {
-		paths := strings.Split(it, ",")
-		val := js.ArrGet(paths...).RawData().Raw()
+		rawpaths := strings.Split(it, ",")
+		log.Infof("rawpaths:%+v", rawpaths)
+		paths := TrimPath(rawpaths)
+		size := len(rawpaths)
+		if size <= 0 {
+			continue
+		}
+		rawArrGet := js.ArrGet(paths...)
+		val := rawArrGet.RawData().Raw()
 		if val == nil {
 			continue
+		}
+		if rawpaths[size-1] == ranger {
+			arr := rawArrGet.Arr()
+			retsize := len(arr)
+			ret := make([]string, retsize)
+			for i, item := range arr {
+				var v string
+				bs, err := jsonen(item.RawData().Raw())
+				if err == nil {
+					v = string(bs)
+				} else {
+					v = fmt.Sprint(item.RawData().Raw())
+				}
+
+				ret[i] = strings.Replace(raw, fmt.Sprintf(`"@%s"`, it), v, 1)
+			}
+			return ret, it
 		}
 		vv, typ := value(val)
 		if vv != "" {
@@ -40,7 +79,7 @@ func Decode(raw string, prebs []byte) string {
 			ret = strings.Replace(ret, fmt.Sprintf(`"@%s`, it), fmt.Sprintf(`"%s`, vv), -1)
 		}
 	}
-	return ret
+	return []string{ret}, ""
 }
 
 func subDecode(raw interface{}, first bool) []string {
@@ -126,7 +165,7 @@ func getLetterStr(bs []byte) string {
 	rs := bytes.Runes(bs)
 	size := len(rs)
 	for i := 1; i < size; i++ {
-		if unicode.IsLetter(rs[i]) || unicode.IsNumber(rs[i]) || rs[i] == comma || rs[i] == dblquot {
+		if unicode.IsLetter(rs[i]) || unicode.IsNumber(rs[i]) || rs[i] == comma || rs[i] == dblquot || rs[i] == dollar {
 			continue
 		}
 		return goutils.ToString(bs[1:i])

@@ -6,6 +6,7 @@ reuse_desc = true
 proto_base_path = "$GOPATH/src/github.com/tgrpc/ngrpc"
 include_imports = "helloworld/helloworld.proto"
 keepalive = "100s"
+data = '["1","2","3"]'
 
 [service.Language]
 address = "localhost:2080"
@@ -14,57 +15,69 @@ proto_base_path = "$GOPATH/src/github.com/tgrpc/ngrpc"
 include_imports = "helloworld/lang.proto"
 keepalive = "100s"
 
-
 [[invokes]]
 service= "Greeter"
 method = "helloworld.Greeter/SayHello"
 headers = ["customerId:123", "region:UK"]
-data = "{\"name\":\"tgrpc-tg1\"}"
-n = 10
-interval = "200ms"
-[invokes.resp]
-cost = "2ms"
-[invokes.resp.json]
-message = "Hello tgrpc-tg1"
-
-[[invokes]]
-service= "Language"
-method = "helloworld.LangService/List"
-headers = ["customerId:123", "region:UK"]
-data = '{}'
+data = '{"name":"$range"}'
 n = 1
 interval = "200ms"
 [invokes.resp]
 cost = "2ms"
-[invokes.resp.json]
-'langs,0,birthday' = 1136185445.0
-totalCount = 999.0
-'langs,1,versions,0,id' = 700.0
-'langs,1,versions,0,vi32s,0' = 111.0
-'langs,1,versions,0,vi32s' = [111.0,222.0]
-'langs,1,versions,0,vi64s,0' = 111.0
-'langs,1,versions,0,vi64s' = [111.0,222.0]
-'langs,1,versions,0,vf64s,0' = 111.0
-'langs,1,versions,0,vf64s' = [111.0,222.0]
-'langs,1,versions,0,vstrs,0' = 'str1'
-'langs,1,versions,0,vstrs' = ['str1','str2']
-[invokes.next]
-service= "Greeter"
-method = "helloworld.Greeter/SayHello"
-headers = ["customerId:123", "region:UK"]
-data = '{"name":"@langs,0,name!!"}'
-n = 5
-interval = "500ms"
-[invokes.next.resp]
-cost = "2ms"
-[invokes.next.resp.json]
-message = "Hello Golang!!"
-[[invokes.then]]
-service= "Greeter"
-method = "helloworld.Greeter/SayHello"
-headers = ["customerId:123", "region:UK"]
-data = "{\"name\":\"tgrpc-tg--then\"}"
-n = 3
-interval = "500ms"
-[invokes.then.resp]
-cost = "2ms"
+# [invokes.resp.json]
+# message = "Hello 1"
+
+# [[invokes]]
+# service= "Greeter"
+# method = "helloworld.Greeter/SayHello"
+# headers = ["customerId:123", "region:UK"]
+# data = "{\"name\":\"tgrpc-tg1\"}"
+# n = 10
+# interval = "200ms"
+# [invokes.resp]
+# cost = "2ms"
+# [invokes.resp.json]
+# message = "Hello tgrpc-tg1"
+
+# [[invokes]]
+# service= "Language"
+# method = "helloworld.LangService/List"
+# headers = ["customerId:123", "region:UK"]
+# data = '{}'
+# n = 1
+# interval = "200ms"
+# [invokes.resp]
+# cost = "2ms"
+# [invokes.resp.json]
+# 'langs,0,birthday' = 1136185445.0
+# totalCount = 999.0
+# 'langs,1,versions,0,id' = 700.0
+# 'langs,1,versions,0,vi32s,0' = 111.0
+# 'langs,1,versions,0,vi32s' = [111.0,222.0]
+# 'langs,1,versions,0,vi64s,0' = 111.0
+# 'langs,1,versions,0,vi64s' = [111.0,222.0]
+# 'langs,1,versions,0,vf64s,0' = 111.0
+# 'langs,1,versions,0,vf64s' = [111.0,222.0]
+# 'langs,1,versions,0,vstrs,0' = 'str1'
+# 'langs,1,versions,0,vstrs' = ['str1','str2']
+# 'langs,1,versions,0,vstrs,$len' = 2
+# [invokes.next]
+# service= "Greeter"
+# method = "helloworld.Greeter/SayHello"
+# headers = ["customerId:123", "region:UK"]
+# data = '{"name":"@langs,0,name!!"}'
+# n = 0
+# interval = "500ms"
+# [invokes.next.resp]
+# cost = "2ms"
+# [invokes.next.resp.json]
+# message = "Hello Golang!!"
+# [[invokes.then]]
+# service= "Greeter"
+# method = "helloworld.Greeter/SayHello"
+# headers = ["customerId:123", "region:UK"]
+# data = "{\"name\":\"tgrpc-tg--then\"}"
+# # n = 3
+# interval = "500ms"
+# [invokes.then.resp]
+# cost = "2ms"

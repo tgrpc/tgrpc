@@ -45,6 +45,7 @@ type Tgrpc struct {
 	conn    *grpc.ClientConn
 	sources map[string]grpcurl.DescriptorSource // 缓存DescriptorSource
 
+	Data           string  `toml:"data"`
 	Address        string  `toml:"address"`
 	KeepaliveTime  *Second `toml:"keepalive"`
 	ReuseDesc      bool    `toml:"reuse_desc"`
@@ -134,23 +135,32 @@ func (t *Tgrpc) Invoke(ivk *Invoke) error {
 		ivk.Next.preResp = make(chan []byte, ivk.N)
 	}
 
-	data := ivk.Data
-	// pre invoke resp
-	if ivk.preResp != nil {
-		bs := <-ivk.preResp
-		if cap(ivk.preResp) == 1 || ivk.N > 1 && len(ivk.preResp) < cap(ivk.preResp)-1 { // 容量不够写，不要再往回放
-			ivk.preResp <- bs
-		}
-		data = Decode(ivk.Data, bs)
-		if !Silence {
-			log.Infof("data: %+v", data)
+	var datas []string
+	if t.Data != "" {
+		datas, _ = Decode(ivk.Data, []byte(t.Data))
+	} else {
+		// pre invoke resp
+		if ivk.preResp != nil {
+			bs := <-ivk.preResp
+			if cap(ivk.preResp) == 1 || ivk.N > 1 && len(ivk.preResp) < cap(ivk.preResp)-1 { // 容量不够写，不要再往回放
+				ivk.preResp <- bs
+			}
+			datas, _ = Decode(ivk.Data, bs)
+			// data = datas[0]
+			// if !Silence {
+			// 	log.Infof("data: %+v", data)
+			// }
 		}
 	}
 
-	err = grpcurl.InvokeRpc(context.Background(),
-		source, t.conn, methodName, ivk.Headers,
-		newInvocationEventHandler(ivk.Resp, methodName, ivk, ivk.Next), decodeFunc(strings.NewReader(data)))
-	return err
+	for _, data := range datas {
+		log.Infof("data:%s", data)
+		err = grpcurl.InvokeRpc(context.Background(),
+			source, t.conn, methodName, ivk.Headers,
+			newInvocationEventHandler(ivk.Resp, methodName, ivk, ivk.Next), decodeFunc(strings.NewReader(data)))
+		isErr(err)
+	}
+	return nil
 }
 
 func Invokes(service map[string]*Tgrpc, ivk *Invoke) {
@@ -170,6 +180,7 @@ func Invokes(service map[string]*Tgrpc, ivk *Invoke) {
 
 			err := rpc.Invoke(ivk)
 			if err != nil {
+				isErr(err)
 				log.Errorf("rpc resp err:%+v", err)
 			}
 			sg.Done()
