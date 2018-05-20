@@ -136,25 +136,26 @@ func (t *Tgrpc) Invoke(ivk *Invoke) error {
 	}
 
 	var datas []string
-	if t.Data != "" {
-		datas, _ = Decode(ivk.Data, []byte(t.Data))
+	// pre invoke resp
+	if ivk.preResp != nil {
+		bs := <-ivk.preResp
+		if cap(ivk.preResp) == 1 || ivk.N > 1 && len(ivk.preResp) < cap(ivk.preResp)-1 { // 容量不够写，不要再往回放
+			ivk.preResp <- bs
+		}
+		datas, _ = Decode(ivk.Data, bs)
 	} else {
-		// pre invoke resp
-		if ivk.preResp != nil {
-			bs := <-ivk.preResp
-			if cap(ivk.preResp) == 1 || ivk.N > 1 && len(ivk.preResp) < cap(ivk.preResp)-1 { // 容量不够写，不要再往回放
-				ivk.preResp <- bs
-			}
-			datas, _ = Decode(ivk.Data, bs)
-			// data = datas[0]
-			// if !Silence {
-			// 	log.Infof("data: %+v", data)
-			// }
+		if t.Data != "" {
+			datas, _ = Decode(ivk.Data, []byte(t.Data))
+			log.Infof("DecodeData:%+v, %s ==> %+v", ivk.Data, t.Data, datas)
+		} else {
+			datas = []string{ivk.Data}
 		}
 	}
 
 	for _, data := range datas {
-		log.Infof("data:%s", data)
+		if !Silence {
+			log.Infof("data: %+v", data)
+		}
 		err = grpcurl.InvokeRpc(context.Background(),
 			source, t.conn, methodName, ivk.Headers,
 			newInvocationEventHandler(ivk.Resp, methodName, ivk, ivk.Next), decodeFunc(strings.NewReader(data)))
