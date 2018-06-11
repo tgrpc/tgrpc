@@ -19,51 +19,51 @@ var (
 			bs:  nil,
 			des: []string{""},
 		},
-		// {
-		// 	raw: `{"name":"@msg"}`,
-		// 	bs:  []byte(`{"msg":"success!"}`),
-		// 	des: `{"name":"success!"}`,
-		// },
-		// {
-		// 	raw: `{"name":"@msg!@msg"}`,
-		// 	bs:  []byte(`{"msg":"success!"}`),
-		// 	des: `{"name":"success!!@msg"}`,
-		// },
-		// {
-		// 	raw: `{"name":"@msg!"}`,
-		// 	bs:  []byte(`{"msg":"success!"}`),
-		// 	des: `{"name":"success!!"}`,
-		// },
-		// {
-		// 	raw: `{"name":"!@msg!"}`,
-		// 	bs:  []byte(`{"msg":"success!"}`),
-		// 	des: `{"name":"!@msg!"}`,
-		// },
-		// {
-		// 	raw: `{"name":"@msg"}`,
-		// 	bs:  []byte(`{"no-msg":"success!"}`),
-		// 	des: `{"name":"@msg"}`,
-		// },
-		// {
-		// 	raw: `{"name":"@langs,0,name"}`,
-		// 	bs:  []byte(`{"langs":[{"name":"Golang"}]}`),
-		// 	des: `{"name":"Golang"}`,
-		// },
-		// {
-		// 	raw: `{"names":["@langs,0,name"]}`,
-		// 	bs:  []byte(`{"langs":[{"name":"Golang"}]}`),
-		// 	des: `{"names":["Golang"]}`,
-		// },
-		// {
-		// 	raw: `{"vals":["@vals,0,i1"]}`,
-		// 	bs:  []byte(`{"vals":[{"i1":100}]}`),
-		// 	des: `{"vals":[100]}`,
-		// },
-		// {
-		// 	raw: `{"names":["@Golang!","@Golang!"],"version":[["@versions,0,name","@versions,1,desp","@versions,2,version","@versions,3,version"]]}`,
-		// 	bs:  []byte(`{"Golang":"go1.0","versions":[{"name":"v1.0"},{"desp":"desp v1.0"},{"version":1.0},{"version":1.2}]}`),
-		// 	des: `{"names":["go1.0!","go1.0!"],"version":[["v1.0","desp v1.0",1,1.2]]}`, // 1.0 ==> 1
-		// },
+		{
+			raw: `{"name":"@msg"}`,
+			bs:  []byte(`{"msg":"success!"}`),
+			des: []string{`{"name":"success!"}`},
+		},
+		{
+			raw: `{"name":"@msg!@msg"}`,
+			bs:  []byte(`{"msg":"success!"}`),
+			des: []string{`{"name":"success!!@msg"}`},
+		},
+		{
+			raw: `{"name":"@msg!"}`,
+			bs:  []byte(`{"msg":"success!"}`),
+			des: []string{`{"name":"success!!"}`},
+		},
+		{
+			raw: `{"name":"!@msg!"}`,
+			bs:  []byte(`{"msg":"success!"}`),
+			des: []string{`{"name":"!@msg!"}`},
+		},
+		{
+			raw: `{"name":"@msg"}`,
+			bs:  []byte(`{"no-msg":"success!"}`),
+			des: []string{`{"name":"@msg"}`},
+		},
+		{
+			raw: `{"name":"@langs,0,name"}`,
+			bs:  []byte(`{"langs":[{"name":"Golang"}]}`),
+			des: []string{`{"name":"Golang"}`},
+		},
+		{
+			raw: `{"names":["@langs,0,name"]}`,
+			bs:  []byte(`{"langs":[{"name":"Golang"}]}`),
+			des: []string{`{"names":["Golang"]}`},
+		},
+		{
+			raw: `{"vals":["@vals,0,i1"]}`,
+			bs:  []byte(`{"vals":[{"i1":100}]}`),
+			des: []string{`{"vals":[100]}`},
+		},
+		{
+			raw: `{"names":["@Golang!","@Golang!"],"version":[["@versions,0,name","@versions,1,desp","@versions,2,version","@versions,3,version"]]}`,
+			bs:  []byte(`{"Golang":"go1.0","versions":[{"name":"v1.0"},{"desp":"desp v1.0"},{"version":1.0},{"version":1.2}]}`),
+			des: []string{`{"names":["go1.0!","go1.0!"],"version":[["v1.0","desp v1.0",1,1.2]]}`}, // 1.0 ==> 1
+		},
 	}
 )
 
@@ -101,7 +101,7 @@ func TestDecode(t *testing.T) {
 			{
 				raw: `{"name":"@$range"}`,
 				bs:  []byte(`["1","2","3"]`),
-				des: []string{`{"name":1}`, `{"name":2}`, `{"name":3}`},
+				des: []string{`{"name":"1"}`, `{"name":"2"}`, `{"name":"3"}`},
 			},
 			{
 				raw: `{"val":"@vals,$range"}`,
