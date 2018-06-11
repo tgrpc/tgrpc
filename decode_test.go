@@ -1,73 +1,77 @@
 package tgrpc
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 )
 
+type testcase struct {
+	raw string
+	bs  []byte
+	des []string
+}
+
 var (
-	tcases = []struct {
-		raw string
-		bs  []byte
-		des string
-	}{
+	tcases = []testcase{
 		{
 			raw: "",
 			bs:  nil,
-			des: "",
+			des: []string{""},
 		},
 		{
 			raw: `{"name":"@msg"}`,
 			bs:  []byte(`{"msg":"success!"}`),
-			des: `{"name":"success!"}`,
+			des: []string{`{"name":"success!"}`},
 		},
 		{
 			raw: `{"name":"@msg!@msg"}`,
 			bs:  []byte(`{"msg":"success!"}`),
-			des: `{"name":"success!!@msg"}`,
+			des: []string{`{"name":"success!!@msg"}`},
 		},
 		{
 			raw: `{"name":"@msg!"}`,
 			bs:  []byte(`{"msg":"success!"}`),
-			des: `{"name":"success!!"}`,
+			des: []string{`{"name":"success!!"}`},
 		},
 		{
 			raw: `{"name":"!@msg!"}`,
 			bs:  []byte(`{"msg":"success!"}`),
-			des: `{"name":"!@msg!"}`,
+			des: []string{`{"name":"!@msg!"}`},
 		},
 		{
 			raw: `{"name":"@msg"}`,
 			bs:  []byte(`{"no-msg":"success!"}`),
-			des: `{"name":"@msg"}`,
+			des: []string{`{"name":"@msg"}`},
 		},
 		{
 			raw: `{"name":"@langs,0,name"}`,
 			bs:  []byte(`{"langs":[{"name":"Golang"}]}`),
-			des: `{"name":"Golang"}`,
+			des: []string{`{"name":"Golang"}`},
 		},
 		{
 			raw: `{"names":["@langs,0,name"]}`,
 			bs:  []byte(`{"langs":[{"name":"Golang"}]}`),
-			des: `{"names":["Golang"]}`,
+			des: []string{`{"names":["Golang"]}`},
 		},
 		{
 			raw: `{"vals":["@vals,0,i1"]}`,
 			bs:  []byte(`{"vals":[{"i1":100}]}`),
-			des: `{"vals":[100]}`,
+			des: []string{`{"vals":[100]}`},
 		},
 		{
 			raw: `{"names":["@Golang!","@Golang!"],"version":[["@versions,0,name","@versions,1,desp","@versions,2,version","@versions,3,version"]]}`,
 			bs:  []byte(`{"Golang":"go1.0","versions":[{"name":"v1.0"},{"desp":"desp v1.0"},{"version":1.0},{"version":1.2}]}`),
-			des: `{"names":["go1.0!","go1.0!"],"version":[["v1.0","desp v1.0",1,1.2]]}`, // 1.0 ==> 1
+			des: []string{`{"names":["go1.0!","go1.0!"],"version":[["v1.0","desp v1.0",1,1.2]]}`}, // 1.0 ==> 1
 		},
 	}
 )
 
 func TestDecode(t *testing.T) {
 	t.Run("Decode-Nil", func(t *testing.T) {
-		des := Decode(tcases[0].raw, tcases[0].bs)
-		if !strings.EqualFold(des, tcases[0].des) {
+		des, _ := Decode(tcases[0].raw, tcases[0].bs)
+		if !reflect.DeepEqual(des, tcases[0].des) {
+			// if !strings.EqualFold(des, tcases[0].des) {
 			t.Errorf("decode: %s, want: %s, got: %s", tcases[0].raw, tcases[0].des, des)
 		} else {
 			log.Debugf("decode, raw: %s bs: %s ==> %s", tcases[0].raw, tcases[0].bs, des)
@@ -77,11 +81,49 @@ func TestDecode(t *testing.T) {
 	t.Run("Decode", func(t *testing.T) {
 		size := len(tcases)
 		for i := 1; i < size; i++ {
-			des := Decode(tcases[i].raw, tcases[i].bs)
-			if !strings.EqualFold(des, tcases[i].des) {
+			des, _ := Decode(tcases[i].raw, tcases[i].bs)
+			if !reflect.DeepEqual(des, tcases[i].des) {
+				// if !strings.EqualFold(des, tcases[i].des) {
 				t.Errorf("decode: %s, want: %s, got: %s", tcases[i].raw, tcases[i].des, des)
 			} else {
 				log.Debugf("decode, raw: %s bs: %s ==> %s", tcases[i].raw, tcases[i].bs, des)
+			}
+		}
+	})
+
+	t.Run("Decode $range", func(t *testing.T) {
+		tcases := []testcase{
+			{
+				raw: `{"vals":["@vals,$range"]}`,
+				bs:  []byte(`{"vals":[{"i1":100},{"i2":101}]}`),
+				des: []string{`{"vals":[{"i1":100}]}`, `{"vals":[{"i2":101}]}`},
+			},
+			{
+				raw: `{"name":"@$range"}`,
+				bs:  []byte(`["1","2","3"]`),
+				des: []string{`{"name":"1"}`, `{"name":"2"}`, `{"name":"3"}`},
+			},
+			{
+				raw: `{"val":"@vals,$range"}`,
+				bs:  []byte(`{"vals":[1,2,3]}`),
+				des: []string{`{"val":1}`, `{"val":2}`, `{"val":3}`},
+			},
+			{
+				raw: `{"val":"@vals,$range","val2":"@vals,$range"}`,
+				bs:  []byte(`{"vals":[1,2,3]}`),
+				des: []string{`{"val":1,"val2":"@vals,$range"}`, `{"val":2,"val2":"@vals,$range"}`, `{"val":3,"val2":"@vals,$range"}`},
+			},
+		}
+		size := len(tcases)
+		for i := 0; i < size; i++ {
+			des, _ := Decode(tcases[i].raw, tcases[i].bs)
+			if !reflect.DeepEqual(des, tcases[i].des) {
+				// if !strings.EqualFold(des, tcases[i].des) {
+				t.Errorf("decode: %s, want: %s, got: %s", tcases[i].raw, tcases[i].des, des)
+			} else {
+				for j, it := range des {
+					log.Debugf("%d decode, raw: %s bs: %s ==> %s", j, tcases[i].raw, tcases[i].bs, it)
+				}
 			}
 		}
 	})

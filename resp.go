@@ -47,7 +47,8 @@ func (r *Resp) VerifyJson(bs []byte) {
 	js := jsnm.BytesFmt(bs)
 	for ks, wv := range r.Json {
 		kss := strings.Split(ks, ",")
-		if kss[len(kss)-1] == "$len" {
+		switch kss[len(kss)-1] {
+		case "$len":
 			wantLen, err := strconv.Atoi(fmt.Sprint(wv))
 			if err == nil {
 				if oklen, l := r.verifyArrLen(js, wantLen, kss[:len(kss)-1]...); !oklen {
