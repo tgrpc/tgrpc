@@ -99,7 +99,7 @@ func TestDecode(t *testing.T) {
 				des: []string{`{"vals":[{"i1":100}]}`, `{"vals":[{"i2":101}]}`},
 			},
 			{
-				raw: `{"name":"$range"}`,
+				raw: `{"name":"@$range"}`,
 				bs:  []byte(`["1","2","3"]`),
 				des: []string{`{"name":1}`, `{"name":2}`, `{"name":3}`},
 			},
@@ -108,11 +108,11 @@ func TestDecode(t *testing.T) {
 				bs:  []byte(`{"vals":[1,2,3]}`),
 				des: []string{`{"val":1}`, `{"val":2}`, `{"val":3}`},
 			},
-			// {
-			// 	raw: `{"val":"@vals,$range","val2":"@vals,$range"}`,
-			// 	bs:  []byte(`{"vals":[1,2,3]}`),
-			// 	des: []string{`{"val":1}`, `{"val":2}`, `{"val":3}`},
-			// },
+			{
+				raw: `{"val":"@vals,$range","val2":"@vals,$range"}`,
+				bs:  []byte(`{"vals":[1,2,3]}`),
+				des: []string{`{"val":1,"val2":"@vals,$range"}`, `{"val":2,"val2":"@vals,$range"}`, `{"val":3,"val2":"@vals,$range"}`},
+			},
 		}
 		size := len(tcases)
 		for i := 0; i < size; i++ {
