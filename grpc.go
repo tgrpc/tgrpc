@@ -13,6 +13,7 @@ import (
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/sirupsen/logrus"
 	"github.com/tgrpc/grpcurl"
+	"github.com/tgrpc/jdecode"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 )
@@ -142,11 +143,11 @@ func (t *Tgrpc) Invoke(ivk *Invoke) error {
 		if cap(ivk.preResp) == 1 || ivk.N > 1 && len(ivk.preResp) < cap(ivk.preResp)-1 { // 容量不够写，不要再往回放
 			ivk.preResp <- bs
 		}
-		datas, _ = Decode(ivk.Data, bs)
+		datas, _ = jdecode.Decode(ivk.Data, bs)
 	} else {
 		if t.Data != "" {
-			datas, _ = Decode(ivk.Data, []byte(t.Data))
-			log.Infof("DecodeData:%+v, %s ==> %+v", ivk.Data, t.Data, datas)
+			datas, _ = jdecode.Decode(ivk.Data, []byte(t.Data))
+			log.Infof("DecodeData: %+v, %s ==> %+v", ivk.Data, t.Data, datas)
 		} else {
 			datas = []string{ivk.Data}
 		}
