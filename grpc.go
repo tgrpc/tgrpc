@@ -147,7 +147,9 @@ func (t *Tgrpc) Invoke(ivk *Invoke) error {
 	} else {
 		if t.Data != "" {
 			datas, _ = jdecode.Decode(ivk.Data, []byte(t.Data))
-			log.Infof("DecodeData: %+v, %s ==> %+v", ivk.Data, t.Data, datas)
+			if len(datas) < 1000 {
+				log.Infof("DecodeData: %+v, %s ==> %+v", ivk.Data, t.Data, datas)
+			}
 		} else {
 			datas = []string{ivk.Data}
 		}
@@ -161,6 +163,9 @@ func (t *Tgrpc) Invoke(ivk *Invoke) error {
 			source, t.conn, methodName, ivk.Headers,
 			newInvocationEventHandler(ivk.Resp, methodName, ivk, ivk.Next), decodeFunc(strings.NewReader(data)))
 		isErr(err)
+		if ivk.Interval != nil {
+			time.Sleep(time.Duration(ivk.Interval.Nanoseconds()))
+		}
 	}
 	return nil
 }
