@@ -17,7 +17,7 @@ keepalive = "100s"
 data = '["1", "2", "3"]'
 
 [[invokes]]
-service= "Language"
+service= "Greeter"
 method = "helloworld.Greeter/SayHello"
 headers = ["customerId:123", "region:UK"]
 data = '{"name":"$range"}'
@@ -31,7 +31,7 @@ data = '{}'
 n = 1
 interval = "200ms"
 [invokes.next]
-service= "Language"
+service= "Greeter"
 method = "helloworld.Greeter/SayHello"
 headers = ["customerId:123", "region:UK"]
 data = '{"name":"@langs,$range,versions,0,desc"}'

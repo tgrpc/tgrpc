@@ -20,6 +20,7 @@ import (
 
 var (
 	Silence bool
+	Curl    bool
 )
 
 type invocationEventHandler struct {
