@@ -1,6 +1,7 @@
 package tgrpc
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -46,12 +47,13 @@ type Tgrpc struct {
 	conn    *grpc.ClientConn
 	sources map[string]grpcurl.DescriptorSource // 缓存DescriptorSource
 
-	Data           string  `toml:"data"`
-	Address        string  `toml:"address"`
-	KeepaliveTime  *Second `toml:"keepalive"`
-	ReuseDesc      bool    `toml:"reuse_desc"`
-	ProtoBasePath  string  `toml:"proto_base_path"` // proto 文件根目录
-	IncludeImports string  `toml:"include_imports"` // 要执行的方法所在的proto
+	Data           string   `toml:"data"`
+	Datas          []string `toml:"datas"`
+	Address        string   `toml:"address"`
+	KeepaliveTime  *Second  `toml:"keepalive"`
+	ReuseDesc      bool     `toml:"reuse_desc"`
+	ProtoBasePath  string   `toml:"proto_base_path"` // proto 文件根目录
+	IncludeImports string   `toml:"include_imports"` // 要执行的方法所在的proto
 }
 
 func (t *Tgrpc) isErr() bool {
@@ -143,11 +145,13 @@ func (t *Tgrpc) Invoke(ivk *Invoke) error {
 		if cap(ivk.preResp) == 1 || ivk.N > 1 && len(ivk.preResp) < cap(ivk.preResp)-1 { // 容量不够写，不要再往回放
 			ivk.preResp <- bs
 		}
+		jdecode.DecodeDataFile(t.Data)
 		datas, _ = jdecode.Decode(ivk.Data, bs)
 	} else {
 		if t.Data != "" {
+			t.Data = jdecode.DecodeDataFile(t.Data)
 			datas, _ = jdecode.Decode(ivk.Data, []byte(t.Data))
-			if len(datas) < 1000 {
+			if len(datas) < 800 {
 				log.Infof("DecodeData: %+v, %s ==> %+v", ivk.Data, t.Data, datas)
 			}
 		} else {
@@ -159,6 +163,9 @@ func (t *Tgrpc) Invoke(ivk *Invoke) error {
 		if !Silence {
 			log.Infof("data: %+v", data)
 		}
+		if Curl {
+			fmt.Println(t.Tocurl(ivk, data))
+		}
 		err = grpcurl.InvokeRpc(context.Background(),
 			source, t.conn, methodName, ivk.Headers,
 			newInvocationEventHandler(ivk.Resp, methodName, ivk, ivk.Next), decodeFunc(strings.NewReader(data)))
@@ -167,7 +174,29 @@ func (t *Tgrpc) Invoke(ivk *Invoke) error {
 			time.Sleep(time.Duration(ivk.Interval.Nanoseconds()))
 		}
 	}
+
 	return nil
+}
+
+func (t *Tgrpc) Tocurl(ivk *Invoke, data string) string {
+	buf := bytes.NewBuffer(make([]byte, 0, 2014))
+	buf.WriteString("curl ")
+	http_ := "http://"
+	if false {
+		http_ = "https://"
+	}
+	buf.WriteString(http_)
+	buf.WriteString(strings.TrimRight(strings.TrimRight(t.Address, ":2080"), ":2083"))
+	buf.WriteString("/api/")
+	buf.WriteString(ivk.Method)
+	for _, h := range ivk.Headers {
+		buf.WriteString(fmt.Sprintf(" -H '%s'", h))
+	}
+	// buf.WriteString(` -H 'Accept-Encoding: gzip, deflate' -H 'Accept-Language: zh-CN,zh;q=0.8,en;q=0.6,zh-TW;q=0.4' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36' -H 'Content-Type: text/plain;charset:utf-8' -H 'Accept: /'`)
+	buf.WriteString(fmt.Sprintf(" --data-binary '%s'", data))
+	buf.WriteString(" --compressed")
+
+	return buf.String()
 }
 
 func Invokes(service map[string]*Tgrpc, ivk *Invoke) {
@@ -184,7 +213,6 @@ func Invokes(service map[string]*Tgrpc, ivk *Invoke) {
 				sg.Done()
 				return
 			}
-
 			err := rpc.Invoke(ivk)
 			if err != nil {
 				isErr(err)
