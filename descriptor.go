@@ -47,7 +47,7 @@ func GenDescriptorSet(protoPath, descSetOut, incImp string) error {
 }
 
 // method: pkg.Service incImp:pkg.service.proto
-func GetDescriptor(protoBasePath, method, incImp string, reuseDesc bool) (*descriptor.FileDescriptorSet, error) {
+func GetDescriptor(protoBasePath, method, incImp string, reuseDesc bool, rawDescs []string) (*descriptor.FileDescriptorSet, error) {
 	serviceName, err := getServiceName(method)
 	if isErr(err) {
 		return nil, err
@@ -56,12 +56,21 @@ func GetDescriptor(protoBasePath, method, incImp string, reuseDesc bool) (*descr
 
 	var desc *descriptor.FileDescriptorSet
 
+	if len(rawDescs) > 0 {
+		desc, err := decodeDescFromRawBytes(descSetOut, rawDescs)
+		if err == nil {
+			return desc, nil
+		}
+		log.Errorf("%+v", err)
+	}
+
 	if reuseDesc {
 		desc, err := decodeDesc(descSetOut)
 		if err == nil {
 			log.WithField("FileDescriptorSet", descSetOut).Debug("use exist desc")
 			return desc, nil
 		}
+		log.Errorf("%+v", err)
 	}
 
 	err = GenDescriptorSet(protoBasePath, descSetOut, incImp)
@@ -104,6 +113,7 @@ func getMethod(method string) (string, error) {
 }
 
 func decodeDesc(descriptorSetFilePath string) (*descriptor.FileDescriptorSet, error) {
+	log.Infof("decode desc...")
 	data, err := ioutil.ReadFile(descriptorSetFilePath)
 	if err != nil {
 		return nil, err
@@ -113,6 +123,21 @@ func decodeDesc(descriptorSetFilePath string) (*descriptor.FileDescriptorSet, er
 		return nil, err
 	}
 	return fileDescriptorSet, nil
+}
+
+func decodeDescFromRawBytes(descSetOut string, raws []string) (*descriptor.FileDescriptorSet, error) {
+	log.Infof("decode desc frow raw...")
+	descSet := new(descriptor.FileDescriptorSet)
+	descSet.File = make([]*descriptor.FileDescriptorProto, 0, len(raws))
+	for _, raw := range raws {
+		data := ParseStr2Bytes(raw)
+		descProto, err := ExtractFile(data)
+		if err != nil {
+			return nil, err
+		}
+		descSet.File = append(descSet.File, descProto)
+	}
+	return descSet, nil
 }
 
 // Descriptor is an extracted service.

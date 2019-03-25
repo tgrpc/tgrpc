@@ -54,6 +54,7 @@ type Tgrpc struct {
 	ReuseDesc      bool     `toml:"reuse_desc"`
 	ProtoBasePath  string   `toml:"proto_base_path"` // proto 文件根目录
 	IncludeImports string   `toml:"include_imports"` // 要执行的方法所在的proto
+	RawDescs       []string `toml:"raw_descs"`       // raw desc, []byte copy后的字符串
 }
 
 func (t *Tgrpc) isErr() bool {
@@ -72,7 +73,7 @@ func (t *Tgrpc) getDescriptorSource(method string) (grpcurl.DescriptorSource, er
 	if source, ex := t.sources[method]; ex {
 		return source, nil
 	}
-	fileDescriptorSet, err := GetDescriptor(t.ProtoBasePath, method, t.IncludeImports, t.ReuseDesc)
+	fileDescriptorSet, err := GetDescriptor(t.ProtoBasePath, method, t.IncludeImports, t.ReuseDesc, t.RawDescs)
 	if isErr(err) {
 		t.err = err
 		return nil, err
