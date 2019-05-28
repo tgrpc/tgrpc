@@ -30,3 +30,7 @@ func (i *Invoke) Init() {
 		go summary(i.Method, i._Costch, i._Clozch, i._WaitRet, i.N)
 	}
 }
+
+type InvokeDate struct {
+	Data string
+}

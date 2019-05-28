@@ -140,6 +140,8 @@ func (t *Tgrpc) Invoke(ivk *Invoke) error {
 	}
 
 	var datas []string
+	ivkData := make(chan string, 4)
+	dataEnd := make(chan bool, 4)
 	// pre invoke resp
 	if ivk.preResp != nil {
 		bs := <-ivk.preResp
@@ -147,15 +149,18 @@ func (t *Tgrpc) Invoke(ivk *Invoke) error {
 			ivk.preResp <- bs
 		}
 		jdecode.DecodeDataFile(t.Data)
-		datas, _ = jdecode.Decode(ivk.Data, bs)
+		// datas, _ = jdecode.Decode(ivk.Data, bs)
+		datas, _ = jdecode.DecodeByChan(ivk.Data, bs, ivkData, dataEnd)
 	} else {
 		if t.Data != "" {
 			t.Data = jdecode.DecodeDataFile(t.Data)
-			datas, _ = jdecode.Decode(ivk.Data, []byte(t.Data))
+			// datas, _ = jdecode.Decode(ivk.Data, []byte(t.Data))
+			datas, _ = jdecode.DecodeByChan(ivk.Data, []byte(t.Data), ivkData, dataEnd)
 		} else if len(t.Datas) > 0 {
 			for _, data_ := range t.Datas {
 				tData := jdecode.DecodeDataFile(data_)
-				datas_, _ := jdecode.Decode(ivk.Data, []byte(tData))
+				// datas_, _ := jdecode.Decode(ivk.Data, []byte(tData))
+				datas_, _ := jdecode.DecodeByChan(ivk.Data, []byte(tData), ivkData, dataEnd)
 				datas = append(datas, datas_...)
 			}
 		} else {
@@ -163,7 +168,15 @@ func (t *Tgrpc) Invoke(ivk *Invoke) error {
 		}
 	}
 
-	for _, data := range datas {
+	for {
+		select {}
+		data := <-ivkData
+		log.Infof("data: %+v", data)
+		if data == "" {
+			break
+		}
+		// }
+		// for _, data := range datas {
 		if !Silence {
 			log.Infof("data: %+v", data)
 		}
