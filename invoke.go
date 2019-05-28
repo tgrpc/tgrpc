@@ -17,16 +17,16 @@ type Invoke struct {
 
 	preResp chan []byte
 	sync.Once
-	Costch  chan int64
-	Clozch  chan bool
-	WaitRet chan bool
+	_Costch  chan int64 `toml:"omitempty"`
+	_Clozch  chan bool  `toml:"omitempty"`
+	_WaitRet chan bool  `toml:"omitempty"`
 }
 
 func (i *Invoke) Init() {
 	if i.N > 1 && i.Resp != nil {
-		i.WaitRet = make(chan bool, 1)
-		i.Clozch = make(chan bool, 1)
-		i.Costch = make(chan int64, 10)
-		go summary(i.Method, i.Costch, i.Clozch, i.WaitRet, i.N)
+		i._WaitRet = make(chan bool, 1)
+		i._Clozch = make(chan bool, 1)
+		i._Costch = make(chan int64, 10)
+		go summary(i.Method, i._Costch, i._Clozch, i._WaitRet, i.N)
 	}
 }

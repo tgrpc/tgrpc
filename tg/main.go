@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/tgrpc/tgrpc"
@@ -54,17 +53,9 @@ func main() {
 	}
 
 	invoked := false
-	for _, service := range _tgrpc.Service {
-		for _, data := range service.Datas {
-			invoked = true
-			for _, ivk := range _tgrpc.Invokes {
-				service.Data = data
-				// ivk.Data = data
-				tgrpc.Invokes(_tgrpc.Service, ivk)
-			}
-			// time.Sleep(time.Second * 30)
-			time.Sleep(1)
-		}
+	for _, ivk := range _tgrpc.Invokes {
+		invoked = true
+		tgrpc.Invokes(_tgrpc.Service, ivk)
 	}
 
 	if invoked {
