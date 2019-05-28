@@ -152,8 +152,11 @@ func (t *Tgrpc) Invoke(ivk *Invoke) error {
 		if t.Data != "" {
 			t.Data = jdecode.DecodeDataFile(t.Data)
 			datas, _ = jdecode.Decode(ivk.Data, []byte(t.Data))
-			if len(datas) < 800 {
-				log.Infof("DecodeData: %+v, %s ==> %+v", ivk.Data, t.Data, datas)
+		} else if len(t.Datas) > 0 {
+			for _, data_ := range t.Datas {
+				tData := jdecode.DecodeDataFile(data_)
+				datas_, _ := jdecode.Decode(ivk.Data, []byte(tData))
+				datas = append(datas, datas_...)
 			}
 		} else {
 			datas = []string{ivk.Data}
@@ -229,8 +232,8 @@ func Invokes(service map[string]*Tgrpc, ivk *Invoke) {
 	}
 	sg.Wait()
 	if ivk.N > 1 && ivk.Resp != nil {
-		ivk.Clozch <- true
-		<-ivk.WaitRet
+		ivk._Clozch <- true
+		<-ivk._WaitRet
 	}
 	for _, ivk := range ivk.Then {
 		Invokes(service, ivk)

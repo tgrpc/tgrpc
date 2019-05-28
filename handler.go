@@ -96,7 +96,7 @@ func (i *invocationEventHandler) verifyCost(md metadata.MD) {
 		startTime, err := getStartTime(md)
 		if !isErr(err) {
 			ns := time.Now().UnixNano() - startTime
-			i.vf.VerifyCost(ns, i.ivk.Costch)
+			i.vf.VerifyCost(ns, i.ivk._Costch)
 		}
 	}
 }
