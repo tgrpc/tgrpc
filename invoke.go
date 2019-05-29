@@ -2,6 +2,9 @@ package tgrpc
 
 import (
 	"sync"
+
+	"github.com/tgrpc/jdecode"
+	"github.com/toukii/goutils"
 )
 
 type Invoke struct {
@@ -29,4 +32,36 @@ func (i *Invoke) Init() {
 		i._Costch = make(chan int64, 10)
 		go summary(i.Method, i._Costch, i._Clozch, i._WaitRet, i.N)
 	}
+}
+
+func (ivk *Invoke) DecodeData(tgrpcDatas []string) (chan string, chan bool, int) {
+	ivkData := make(chan string, 4)
+	dataEnd := make(chan bool, 4)
+	endCount := 0
+
+	if len(tgrpcDatas) <= 0 {
+		endCount++
+		ivkData <- ivk.Data
+		dataEnd <- true
+		return ivkData, dataEnd, endCount
+	}
+
+	if ivk.preResp != nil {
+		bs := <-ivk.preResp
+		if cap(ivk.preResp) == 1 || ivk.N > 1 && len(ivk.preResp) < cap(ivk.preResp)-1 { // 容量不够写，不要再往回放
+			ivk.preResp <- bs
+		}
+
+		endCount++
+		jdecode.DecodeByChan(ivk.Data, bs, ivkData, dataEnd)
+		return ivkData, dataEnd, endCount
+	}
+
+	for _, data_ := range tgrpcDatas {
+		tData := jdecode.DecodeDataFile(data_)
+		jdecode.DecodeByChan(ivk.Data, goutils.ToByte(tData), ivkData, dataEnd)
+		endCount++
+	}
+
+	return ivkData, dataEnd, endCount
 }
