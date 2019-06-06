@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/sirupsen/logrus"
 	"github.com/tgrpc/desc"
 	"github.com/tgrpc/grpcurl"
@@ -73,30 +72,8 @@ func (t *Tgrpc) getDescriptorSource(method string) (grpcurl.DescriptorSource, er
 	if source, ex := t.sources[method]; ex {
 		return source, nil
 	}
-	// fileDescriptorSet, err := GetDescriptor(t.ProtoBasePath, method, t.IncludeImports, t.ReuseDesc, t.RawDescs)
-	fileDescriptorSet, err := desc.GetDescriptor(t.ProtoBasePath, method, t.IncludeImports, t.ReuseDesc, t.RawDescs)
-	if isErr(err) {
-		t.err = err
-		return nil, err
-	}
 
-	serviceName, err := desc.GetServiceName(method)
-	if isErr(err) {
-		t.err = err
-		return nil, err
-	}
-	service, err := desc.GetServiceDescriptor([]*descriptor.FileDescriptorSet{fileDescriptorSet}, serviceName)
-	if isErr(err) {
-		t.err = err
-		return nil, err
-	}
-	fileDescriptorSet, err = desc.SortFileDescriptorSet(service.FileDescriptorSet, service.FileDescriptorProto)
-	if isErr(err) {
-		t.err = err
-		return nil, err
-	}
-
-	source, err := grpcurl.DescriptorSourceFromFileDescriptorSet(fileDescriptorSet)
+	source, err := desc.GetDescriptorSource(t.ProtoBasePath, method, t.IncludeImports, t.ReuseDesc, t.RawDescs)
 	if isErr(err) {
 		t.err = err
 	}
