@@ -13,8 +13,8 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/sirupsen/logrus"
+	"github.com/tgrpc/desc"
 	"github.com/tgrpc/grpcurl"
-	// "github.com/tgrpc/jdecode"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 )
@@ -73,23 +73,24 @@ func (t *Tgrpc) getDescriptorSource(method string) (grpcurl.DescriptorSource, er
 	if source, ex := t.sources[method]; ex {
 		return source, nil
 	}
-	fileDescriptorSet, err := GetDescriptor(t.ProtoBasePath, method, t.IncludeImports, t.ReuseDesc, t.RawDescs)
+	// fileDescriptorSet, err := GetDescriptor(t.ProtoBasePath, method, t.IncludeImports, t.ReuseDesc, t.RawDescs)
+	fileDescriptorSet, err := desc.GetDescriptor(t.ProtoBasePath, method, t.IncludeImports, t.ReuseDesc, t.RawDescs)
 	if isErr(err) {
 		t.err = err
 		return nil, err
 	}
 
-	serviceName, err := getServiceName(method)
+	serviceName, err := desc.GetServiceName(method)
 	if isErr(err) {
 		t.err = err
 		return nil, err
 	}
-	service, err := GetServiceDescriptor([]*descriptor.FileDescriptorSet{fileDescriptorSet}, serviceName)
+	service, err := desc.GetServiceDescriptor([]*descriptor.FileDescriptorSet{fileDescriptorSet}, serviceName)
 	if isErr(err) {
 		t.err = err
 		return nil, err
 	}
-	fileDescriptorSet, err = SortFileDescriptorSet(service.FileDescriptorSet, service.FileDescriptorProto)
+	fileDescriptorSet, err = desc.SortFileDescriptorSet(service.FileDescriptorSet, service.FileDescriptorProto)
 	if isErr(err) {
 		t.err = err
 		return nil, err
@@ -131,7 +132,7 @@ func (t *Tgrpc) Invoke(ivk *Invoke) error {
 		return err
 	}
 
-	methodName, err := getMethod(ivk.Method)
+	methodName, err := desc.GetMethod(ivk.Method)
 	if isErr(err) {
 		return err
 	}
