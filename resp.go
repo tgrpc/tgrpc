@@ -22,10 +22,10 @@ var (
 )
 
 type Resp struct {
-	Cost   *Ms                    `toml:"cost"`
-	Body   string                 `toml:"body"`
-	Regexp string                 `toml:"regexp"`
-	Json   map[string]interface{} `toml:"json"`
+	Cost   *Ms                    `toml:"cost" yaml:"cost"`
+	Body   string                 `toml:"body" yaml:"body"`
+	Regexp string                 `toml:"regexp" yaml:"regexp"`
+	Json   map[string]interface{} `toml:"json" yaml:"json"`
 }
 
 func (r *Resp) Verify(bs []byte) {

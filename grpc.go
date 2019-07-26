@@ -46,14 +46,14 @@ type Tgrpc struct {
 	conn    *grpc.ClientConn
 	sources map[string]grpcurl.DescriptorSource // 缓存DescriptorSource
 
-	// Data           string   `toml:"data"` // 废弃，使用datas
-	Datas          []string `toml:"datas"`
-	Address        string   `toml:"address"`
-	KeepaliveTime  *Second  `toml:"keepalive"`
-	ReuseDesc      bool     `toml:"reuse_desc"`
-	ProtoBasePath  string   `toml:"proto_base_path"` // proto 文件根目录
-	IncludeImports string   `toml:"include_imports"` // 要执行的方法所在的proto
-	RawDescs       []string `toml:"raw_descs"`       // raw desc, []byte copy后的字符串
+	// Data           string   `toml:"data" yaml:"data"` // 废弃，使用datas
+	Datas          []string `toml:"datas" yaml:"datas"`
+	Address        string   `toml:"address" yaml:"address"`
+	KeepaliveTime  *Second  `toml:"keepalive" yaml:"keepalive"`
+	ReuseDesc      bool     `toml:"reuse_desc" yaml:"reuse_desc"`
+	ProtoBasePath  string   `toml:"proto_base_path" yaml:"proto_base_path"` // proto 文件根目录
+	IncludeImports string   `toml:"include_imports" yaml:"include_imports"` // 要执行的方法所在的proto
+	RawDescs       []string `toml:"raw_descs" yaml:"raw_descs"`             // raw desc, []byte copy后的字符串
 }
 
 func (t *Tgrpc) isErr() bool {

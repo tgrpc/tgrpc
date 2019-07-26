@@ -8,21 +8,21 @@ import (
 )
 
 type Invoke struct {
-	GrpcService string    `toml:"service"`
-	Method      string    `toml:"method"`
-	Headers     []string  `toml:"headers"`
-	Data        string    `toml:"data"`
-	N           int       `toml:"n"`
-	Interval    *Ms       `toml:"interval"`
-	Resp        *Resp     `toml:"resp"`
-	Next        *Invoke   `toml:"next"` // next invoke
-	Then        []*Invoke `toml:"then"` // then invoke: all the invokes
+	GrpcService string    `toml:"service" yaml:"service"`
+	Method      string    `toml:"method" yaml:"method"`
+	Headers     []string  `toml:"headers" yaml:"headers"`
+	Data        string    `toml:"data" yaml:"data"`
+	N           int       `toml:"n" yaml:"n"`
+	Interval    *Ms       `toml:"interval" yaml:"interval"`
+	Resp        *Resp     `toml:"resp" yaml:"resp"`
+	Next        *Invoke   `toml:"next" yaml:"next"` // next invoke
+	Then        []*Invoke `toml:"then" yaml:"then"` // then invoke: all the invokes
 
 	preResp chan []byte
 	sync.Once
-	_Costch  chan int64 `toml:"omitempty"`
-	_Clozch  chan bool  `toml:"omitempty"`
-	_WaitRet chan bool  `toml:"omitempty"`
+	_Costch  chan int64 `toml:"omitempty" yaml:"omitempty"`
+	_Clozch  chan bool  `toml:"omitempty" yaml:"omitempty"`
+	_WaitRet chan bool  `toml:"omitempty" yaml:"omitempty"`
 }
 
 func (i *Invoke) Init() {

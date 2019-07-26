@@ -1,23 +1,32 @@
 package main
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/tgrpc/tgrpc"
 	"github.com/toukii/bytes"
 	"github.com/toukii/goutils"
+	"gopkg.in/yaml.v2"
 )
 
 type Tgrpc struct {
-	Service  map[string]*tgrpc.Tgrpc `toml:"service"`
-	Invokes  []*tgrpc.Invoke         `toml:"invokes"`
-	LogLevel string                  `toml:"log_level"`
+	Service  map[string]*tgrpc.Tgrpc `toml:"service" yaml:"service"`
+	Invokes  []*tgrpc.Invoke         `toml:"invokes" yaml:"invokes"`
+	LogLevel string                  `toml:"log_level" yaml:"log_level"`
 }
 
 func Setup() *Tgrpc {
 	tgr := new(Tgrpc)
-	_, err := toml.DecodeFile(conf, tgr)
+	var err error
+	if strings.HasSuffix(conf, "yaml") {
+		bs := goutils.ReadFile(conf)
+		err = yaml.Unmarshal(bs, tgr)
+	} else {
+		_, err = toml.DecodeFile(conf, tgr)
+	}
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -92,7 +101,14 @@ func initrpc() {
 		LogLevel: "debug",
 	}
 
+	bs, yerr := yaml.Marshal(tgrs)
+	if yerr != nil {
+		log.Errorf("yaml marshal err:%+v", yerr)
+	}
+	fmt.Printf("%s\n", bs)
+
 	wr := bytes.NewWriter(make([]byte, 0, 256))
+
 	err := toml.NewEncoder(wr).Encode(tgrs)
 	log.Infof("encode:\n%s\nerr: %+v", wr.Bytes(), err)
 	err = goutils.SafeWriteFile("tgrpc.toml", wr.Bytes())
