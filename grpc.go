@@ -154,7 +154,7 @@ func (t *Tgrpc) Tocurl(ivk *Invoke, data string) string {
 		http_ = "https://"
 	}
 	buf.WriteString(http_)
-	buf.WriteString(strings.TrimRight(strings.TrimRight(t.Address, ":2080"), ":2083"))
+	buf.WriteString(strings.TrimSuffix(strings.TrimSuffix(t.Address, ":2080"), ":2083"))
 	buf.WriteString("/api/")
 	buf.WriteString(ivk.Method)
 	for _, h := range ivk.Headers {
